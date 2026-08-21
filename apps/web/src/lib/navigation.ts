@@ -52,10 +52,33 @@ export const NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
+    href: '/integracoes',
+    label: 'Integracoes',
+    shortLabel: 'Integr.',
+    description: 'Conexoes com sistemas externos: banco de dados e Protheus.',
+    icon: 'plug',
+    items: [
+      {
+        href: '/integracoes/banco',
+        label: 'Banco de dados',
+        description: 'Servidor, banco e situacao da conexao. Somente leitura.',
+        icon: 'database',
+        permission: 'settings:read',
+      },
+      {
+        href: '/integracoes/protheus',
+        label: 'Protheus',
+        description: 'Situacao da conexao com o ERP, teste de autenticacao e carga de cadastros.',
+        icon: 'plug',
+        permission: 'settings:read',
+      },
+    ],
+  },
+  {
     href: '/configurador',
     label: 'Configurador',
     shortLabel: 'Config.',
-    description: 'Parametrizacao sistemica do portal.',
+    description: 'Parametrizacao sistemica e diagnostico do portal.',
     icon: 'settings',
     items: [
       {
@@ -66,24 +89,10 @@ export const NAV_SECTIONS: NavSection[] = [
         permission: 'settings:read',
       },
       {
-        href: '/configurador/banco',
-        label: 'Banco de dados',
-        description: 'Servidor, banco e situacao da conexao. Somente leitura.',
-        icon: 'database',
-        permission: 'settings:read',
-      },
-      {
         href: '/configurador/diagnostico',
         label: 'Diagnostico do sistema',
         description: 'Recursos exigidos, arquivos, programas em uso e situacao das atualizacoes.',
         icon: 'pulse',
-        permission: 'settings:read',
-      },
-      {
-        href: '/configurador/protheus',
-        label: 'Conexao Protheus',
-        description: 'Situacao da conexao com o ERP e teste de autenticacao.',
-        icon: 'plug',
         permission: 'settings:read',
       },
     ],

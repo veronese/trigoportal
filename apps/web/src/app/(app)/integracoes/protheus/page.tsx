@@ -51,9 +51,15 @@ export default function ConexaoProtheusPage() {
     <div className="mx-auto flex max-w-3xl flex-col gap-5">
       <PageTitle
         icon="plug"
-        modulo="Configurador"
+        modulo="Integracoes"
         titulo="Conexao Protheus"
         descricao="O portal autentica no REST do Protheus com uma conta de servico (usuario e senha) e reaproveita o mesmo token em todas as chamadas."
+        acoes={
+          <>
+            <LinkParametros grupo="Protheus" rotulo="Parametros da conexao" />
+            <LinkParametros grupo="Carga de produtos" rotulo="Parametros da carga" />
+          </>
+        }
       />
 
       {erro && <Alert>{erro}</Alert>}
@@ -84,7 +90,7 @@ export default function ConexaoProtheusPage() {
               <div className="mt-4">
                 <Alert>
                   Falta preencher URL, usuario ou senha.{' '}
-                  <Link href="/configurador/parametros" className="underline">
+                  <Link href="/configurador/parametros?grupo=Protheus" className="underline">
                     Configure em Parametros
                   </Link>
                   .
@@ -187,5 +193,22 @@ function Item({ children }: { children: React.ReactNode }) {
       <span aria-hidden className="mt-1.5 size-1.5 shrink-0 rounded-full bg-brand-500" />
       <span>{children}</span>
     </li>
+  )
+}
+
+/**
+ * Atalho para o grupo de parametros desta integracao.
+ *
+ * A tela de Parametros continua sendo a UNICA que edita: validacao por tipo e
+ * cifragem de segredo vivem la. Aqui e so o caminho, filtrado por `?grupo=`.
+ */
+function LinkParametros({ grupo, rotulo }: { grupo: string; rotulo: string }) {
+  return (
+    <Link
+      href={`/configurador/parametros?grupo=${encodeURIComponent(grupo)}`}
+      className="inline-flex min-h-11 items-center rounded-lg border border-border-strong px-3 text-sm font-medium text-ink-700 hover:bg-ink-50"
+    >
+      {rotulo}
+    </Link>
   )
 }

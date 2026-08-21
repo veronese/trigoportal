@@ -32,7 +32,7 @@ export default function BancoDeDadosPage() {
     <div className="mx-auto flex max-w-3xl flex-col gap-5">
       <PageTitle
         icon="database"
-        modulo="Configurador"
+        modulo="Integracoes"
         titulo="Banco de dados"
         descricao="Conexao em uso pelo portal, em modo leitura. E definida no arquivo .env do servidor, nao por esta tela."
         acoes={
@@ -116,10 +116,12 @@ export default function BancoDeDadosPage() {
               <code className="rounded bg-ink-100 px-1">.env</code> e reiniciar o BFF.
             </p>
             <p className="mt-3 text-sm text-ink-600">
-              O que muda o comportamento das consultas <strong>e</strong> parametrizavel: veja o
-              grupo <strong>Banco de dados</strong> em{' '}
-              <Link href="/configurador/parametros" className="underline">
-                Parametros
+              O que muda o comportamento das consultas <strong>e</strong> parametrizavel:{' '}
+              <Link
+                href="/configurador/parametros?grupo=Banco%20de%20dados"
+                className="underline"
+              >
+                abrir o grupo Banco de dados em Parametros
               </Link>
               .
             </p>

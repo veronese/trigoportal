@@ -11,6 +11,9 @@ const PUBLIC_PATHS = ['/login']
 const LEGACY_ROUTES: Record<string, string> = {
   '/usuarios': '/cadastros/usuarios',
   '/parametros': '/configurador/parametros',
+  // Movidas para o modulo Integracoes. Link salvo em favorito continua valendo.
+  '/configurador/banco': '/integracoes/banco',
+  '/configurador/protheus': '/integracoes/protheus',
 }
 
 /**

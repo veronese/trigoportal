@@ -1,6 +1,8 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import {
   BOOLEAN_FALSE,
   BOOLEAN_TRUE,
@@ -18,6 +20,15 @@ import { ApiError, api } from '@/lib/api'
 export default function ParametrosPage() {
   const { hasPermission } = useSession()
   const canWrite = hasPermission('settings:write')
+
+  /**
+   * `?grupo=` filtra a tela a um grupo so.
+   *
+   * Existe para o modulo Integracoes apontar para os parametros dele — Protheus,
+   * Banco de dados, Carga de produtos — sem duplicar a tela de edicao. A regra de
+   * validacao e de cifragem por tipo vive aqui e em um lugar so.
+   */
+  const grupoFiltrado = useSearchParams().get('grupo')?.trim() || null
 
   const [groups, setGroups] = useState<ParameterGroupView[]>([])
   const [loading, setLoading] = useState(true)
@@ -41,6 +52,10 @@ export default function ParametrosPage() {
   useEffect(() => {
     void load()
   }, [load])
+
+  const visiveis = grupoFiltrado
+    ? groups.filter((g) => g.group.toLowerCase() === grupoFiltrado.toLowerCase())
+    : groups
 
   const executar = useCallback(
     async (acao: () => Promise<unknown>, mensagem: string) => {
@@ -85,7 +100,20 @@ export default function ParametrosPage() {
       {erro && <Alert>{erro}</Alert>}
       {loading && <p className="text-sm text-ink-500">Carregando...</p>}
 
-      {groups.map((group) => (
+      {grupoFiltrado && (
+        <Alert tone="success">
+          Mostrando apenas o grupo <strong>{grupoFiltrado}</strong>.{' '}
+          <Link href="/configurador/parametros" className="underline">
+            Ver todos os parametros
+          </Link>
+        </Alert>
+      )}
+
+      {grupoFiltrado && visiveis.length === 0 && !loading && (
+        <Alert>Nenhum grupo chamado &ldquo;{grupoFiltrado}&rdquo;.</Alert>
+      )}
+
+      {visiveis.map((group) => (
         <section key={group.group} className="flex flex-col gap-3">
           <CardFlush title={group.group}>
             <ul className="divide-y divide-border-subtle">

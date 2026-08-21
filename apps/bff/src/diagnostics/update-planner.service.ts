@@ -205,27 +205,36 @@ export class UpdatePlannerService {
         })
       }
 
-      // CONDICIONAL, e nao regra fixa: o impedimento era a chave
-      // `package.json#prisma`, que a versao 7 remove. Uma vez migrada para
-      // prisma.config.ts, o bloqueio tem que sumir sozinho — bloqueio que
-      // sobrevive ao proprio motivo vira ruido, e ruido e ignorado.
+      // CONDICIONAL, e nao regra fixa: a condicao e o `url` ainda existir no
+      // datasource do schema. Feita a migracao para driver adapter, o bloqueio
+      // desaparece sozinho — bloqueio que sobrevive ao proprio motivo vira
+      // ruido, e ruido e ignorado.
+      //
+      // A CHAVE package.json#prisma tambem era impedimento e foi resolvida em
+      // 21/08/2026. Ela NAO era a barreira principal, ao contrario do que este
+      // planejador dizia: a tentativa de subir para a 7 falhou no `url`, que o
+      // plano nao mencionava.
       if (
         (dep.nome === 'prisma' || dep.nome === '@prisma/client') &&
         paraMajor >= 7 &&
         deMajor < 7 &&
-        this.usaChavePrismaNoPackageJson(raiz)
+        (this.usaChavePrismaNoPackageJson(raiz) || this.schemaTemUrlNoDatasource(raiz))
       ) {
         lista.push({
           pacote: dep.nome,
           motivo:
-            'A versao 7 remove a configuracao `package.json#prisma`, que este projeto ainda usa ' +
-            'para apontar o seed. O aviso de depreciacao ja aparece em todo comando prisma.',
+            'A versao 7 nao aceita mais `url` no bloco datasource do schema. A conexao passa ' +
+            'para o prisma.config.ts e o PrismaClient exige um DRIVER ADAPTER no construtor. ' +
+            'Verificado na pratica em 21/08/2026: `prisma validate` recusa o schema com ' +
+            'P1012 logo apos a instalacao.',
           comoResolver:
-            'Criar apps/bff/prisma.config.ts declarando o seed em `migrations.seed`, remover a ' +
-            'chave "prisma" do package.json e conferir que `pnpm --filter @trigo/bff db:seed` ' +
-            'continua rodando. Pode ser feito ANTES da atualizacao, ainda na versao 6. ' +
-            'ATENCAO: com prisma.config.ts o CLI para de carregar o .env sozinho — o arquivo ' +
-            'precisa ler as variaveis explicitamente.',
+            'E migracao, nao atualizacao — planeje como tarefa propria. Passos: instalar o ' +
+            'adapter de cada banco (@prisma/adapter-mssql para SQL Server e ' +
+            '@prisma/adapter-better-sqlite3 para o banco local, este NATIVO, exigindo node-gyp ' +
+            'no Windows); mover a URL para prisma.config.ts; remover `url` dos dois schemas; ' +
+            'reescrever o PrismaService para construir o client com o adapter escolhido em ' +
+            'runtime. Isso pode ate SIMPLIFICAR o projeto: escolhendo o adapter em runtime, ' +
+            'trocar de banco deixa de exigir regerar o client.',
         })
       }
     }
@@ -252,6 +261,38 @@ export class UpdatePlannerService {
       // por falta de informacao trava atualizacao sem motivo demonstrado.
       return false
     }
+  }
+
+  /**
+   * O schema ainda declara `url` no bloco datasource?
+   *
+   * E o que a versao 7 do Prisma recusa. Le os dois schemas: basta um deles
+   * ainda ter `url` para a atualizacao quebrar.
+   */
+  private schemaTemUrlNoDatasource(raiz: string | null): boolean {
+    if (!raiz) return false
+
+    for (const nome of ['schema.prisma', 'schema.sqlite.prisma']) {
+      let conteudo: string
+      try {
+        conteudo = readFileSync(path.join(raiz, 'apps', 'bff', 'prisma', nome), 'utf8')
+      } catch {
+        // Arquivo ausente nao e prova de nada: segue para o proximo.
+        continue
+      }
+
+      // Checagem por LINHA, e nao por bloco: num schema Prisma `url =` so
+      // existe dentro de datasource. A versao anterior recortava o bloco com
+      // regex de chaves e nao funcionava — simples aqui e tao correto e nao tem
+      // onde errar.
+      const temUrl = conteudo
+        .split('\n')
+        .some((linha) => /^\s*url\s*=/.test(linha) && !linha.trimStart().startsWith('//'))
+
+      if (temUrl) return true
+    }
+
+    return false
   }
 
   private precondicoes(
@@ -422,8 +463,11 @@ export class UpdatePlannerService {
     return [
       'git checkout -- package.json apps/*/package.json packages/*/package.json pnpm-lock.yaml',
       'pnpm install',
-      'pnpm --filter @trigo/bff exec prisma generate',
+      '# Em desenvolvimento o client aponta para o SQLite. `prisma generate` puro',
+      '# usaria o schema de SQL Server e deixaria o ambiente local inconsistente.',
+      'pnpm --filter @trigo/bff db:sqlite      # ou db:sqlserver, conforme o ambiente',
       'pnpm build:packages',
+      'pnpm typecheck                          # confirma que o rollback devolveu estado bom',
     ]
   }
 

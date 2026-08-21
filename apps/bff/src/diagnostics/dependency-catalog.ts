@@ -124,11 +124,14 @@ export const DEPENDENCIAS: DependenciaCatalogada[] = [
     tipo: 'runtime',
     papel: 'Acesso ao banco. Cliente gerado a partir do schema.prisma.',
     impactoMajor:
-      'ATENCAO ESPECIFICA: a versao 7 remove a configuracao `package.json#prisma`, que este ' +
-      'projeto ainda usa para o seed — o aviso de depreciacao ja aparece em todo comando. ' +
-      'Antes de subir para a 7 e preciso migrar para prisma.config.ts. Depois de qualquer ' +
-      'atualizacao, `prisma generate` e obrigatorio, e no Windows ele falha com EPERM se o BFF ' +
-      'estiver rodando (lock na DLL do engine).',
+      'TENTADO EM 21/08/2026 e revertido: a versao 7 e MIGRACAO DE ARQUITETURA, nao atualizacao ' +
+      'de pacote. Ela remove `url` do bloco datasource do schema — a conexao passa para o ' +
+      'prisma.config.ts, e o PrismaClient exige um DRIVER ADAPTER no construtor ' +
+      '(@prisma/adapter-mssql para SQL Server, @prisma/adapter-better-sqlite3 para o banco ' +
+      'local). Isso significa: dependencia nova, uma delas NATIVA (node-gyp no Windows), ' +
+      'reescrita do PrismaService e revisao da estrategia de dois schemas. ' +
+      'Depois de qualquer atualizacao, `prisma generate` e obrigatorio, e no Windows ele falha ' +
+      'com EPERM se o BFF estiver rodando (lock na DLL do engine).',
   },
   {
     nome: 'prisma',

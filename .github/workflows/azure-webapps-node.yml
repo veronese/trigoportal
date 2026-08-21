@@ -17,9 +17,29 @@
 # For more information on the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
 # For more samples to get started with GitHub Action workflows to deploy to Azure: https://github.com/Azure/actions-workflow-samples
 
+# ATENCAO — TEMPLATE NAO ADAPTADO AO PROJETO.
+#
+# O gatilho automatico por push esta DESLIGADO de proposito: do jeito que este
+# arquivo esta, ele falha, e falha vermelha que ninguem pode consertar ensina a
+# ignorar o CI. Sobrou apenas workflow_dispatch, para execucao manual quando
+# alguem for adapta-lo.
+#
+# O que falta antes de religar o push:
+#   1. AZURE_WEBAPP_NAME ainda e o placeholder "your-app-name".
+#   2. Usa `npm install` e cache 'npm'. Este projeto e um monorepo PNPM com
+#      workspaces: precisa de pnpm/action-setup e `pnpm install --frozen-lockfile`.
+#   3. NODE_VERSION '20.x' esta ABAIXO do minimo do projeto (engines: >=22).
+#   4. Publica a raiz do repositorio (`AZURE_WEBAPP_PACKAGE_PATH: '.'`), o que
+#      inclui node_modules, em vez do artefato de build.
+#   5. Decisao pendente de arquitetura: se o portal for para o Azure Web Apps, ele
+#      precisa alcancar o SQL Server local e o Protheus on-premises — o que exige
+#      VPN ou conexao hibrida. Ver a secao de implantacao no README.
+#
+# A verificacao de codigo (tipos, build, drift, segredo) esta em ci.yml, que
+# funciona e roda a cada push.
 on:
-  push:
-    branches: [ "main" ]
+  # push:
+  #   branches: [ "main" ]
   workflow_dispatch:
 
 env:

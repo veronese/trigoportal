@@ -26,3 +26,9 @@ coverage/
 # Saida de build alternativa, usada no Windows para nao disputar lock com o
 # dev server (NEXT_DIST_DIR).
 .next-build/
+
+# Gerados pelo Next 16 a cada execucao (agentRules). Versionar arquivo que a
+# ferramenta reescreve sozinha suja o historico sem ganho — desligue com
+# `agentRules: false` no next.config se preferir nao te-los nem local.
+AGENTS.md
+CLAUDE.md

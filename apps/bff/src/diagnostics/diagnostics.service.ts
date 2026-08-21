@@ -47,6 +47,7 @@ const ARQUIVOS: Array<Omit<DiagnosticoCaminho, 'existe' | 'tamanhoBytes' | 'modi
   { caminho: 'apps/bff/prisma/seed.ts', tipo: 'arquivo', papel: 'Cria o administrador inicial e sincroniza o catalogo de parametros.' },
   { caminho: 'apps/bff/deploy/criar-banco.sql', tipo: 'arquivo', papel: 'Cria o banco do zero em outra instancia. GERADO do schema.', gerado: true },
   { caminho: 'apps/bff/nest-cli.json', tipo: 'arquivo', papel: 'Configuracao de build do BFF (deleteOutDir).' },
+  { caminho: 'apps/bff/prisma.config.ts', tipo: 'arquivo', papel: 'Config do Prisma CLI: schema padrao e comando de seed. Substitui package.json#prisma, removido na versao 7.' },
   { caminho: 'apps/web/next.config.ts', tipo: 'arquivo', papel: 'Proxy /api/bff, cabecalhos de seguranca e modo de build.', obrigatorio: true },
   { caminho: 'apps/web/src/middleware.ts', tipo: 'arquivo', papel: 'Protecao de rota e redirecionamento de rota legada.', obrigatorio: true },
   { caminho: 'apps/web/src/app/globals.css', tipo: 'arquivo', papel: 'Tokens @theme: a identidade visual do Grupo Trigo.', obrigatorio: true },

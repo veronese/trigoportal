@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common'
 import { NpmRegistryService } from './npm-registry.service'
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
 import type {
@@ -139,7 +139,7 @@ export class UpdatePlannerService {
 
     const escolhidas = dependencias.filter((d) => solicitados.includes(d.nome))
 
-    const bloqueios = this.bloqueios(escolhidas, dependencias)
+    const bloqueios = this.bloqueios(escolhidas, dependencias, raiz)
     const permitidas = escolhidas.filter((d) => !bloqueios.some((b) => b.pacote === d.nome))
     const grupos = this.agrupar(permitidas, dependencias)
 
@@ -172,6 +172,7 @@ export class UpdatePlannerService {
   private bloqueios(
     escolhidas: DiagnosticoDependencia[],
     todas: DiagnosticoDependencia[],
+    raiz: string | null,
   ): BloqueioAtualizacao[] {
     const lista: BloqueioAtualizacao[] = []
     const usaNestCli = todas.some((d) => d.nome === '@nestjs/cli')
@@ -204,21 +205,53 @@ export class UpdatePlannerService {
         })
       }
 
-      if ((dep.nome === 'prisma' || dep.nome === '@prisma/client') && paraMajor >= 7 && deMajor < 7) {
+      // CONDICIONAL, e nao regra fixa: o impedimento era a chave
+      // `package.json#prisma`, que a versao 7 remove. Uma vez migrada para
+      // prisma.config.ts, o bloqueio tem que sumir sozinho — bloqueio que
+      // sobrevive ao proprio motivo vira ruido, e ruido e ignorado.
+      if (
+        (dep.nome === 'prisma' || dep.nome === '@prisma/client') &&
+        paraMajor >= 7 &&
+        deMajor < 7 &&
+        this.usaChavePrismaNoPackageJson(raiz)
+      ) {
         lista.push({
           pacote: dep.nome,
           motivo:
             'A versao 7 remove a configuracao `package.json#prisma`, que este projeto ainda usa ' +
             'para apontar o seed. O aviso de depreciacao ja aparece em todo comando prisma.',
           comoResolver:
-            'Criar apps/bff/prisma.config.ts declarando o seed, remover a chave "prisma" do ' +
-            'package.json e conferir que `pnpm --filter @trigo/bff db:seed` continua rodando. ' +
-            'Isso pode ser feito ANTES da atualizacao, ainda na versao 6.',
+            'Criar apps/bff/prisma.config.ts declarando o seed em `migrations.seed`, remover a ' +
+            'chave "prisma" do package.json e conferir que `pnpm --filter @trigo/bff db:seed` ' +
+            'continua rodando. Pode ser feito ANTES da atualizacao, ainda na versao 6. ' +
+            'ATENCAO: com prisma.config.ts o CLI para de carregar o .env sozinho — o arquivo ' +
+            'precisa ler as variaveis explicitamente.',
         })
       }
     }
 
     return lista
+  }
+
+  /**
+   * A chave `prisma` do package.json do BFF ainda existe?
+   *
+   * E ela, e nao a ausencia do prisma.config.ts, que a versao 7 quebra: um
+   * projeto pode ter os dois durante a migracao, e nesse caso a chave e que
+   * manda.
+   */
+  private usaChavePrismaNoPackageJson(raiz: string | null): boolean {
+    if (!raiz) return false
+    try {
+      const pacote = JSON.parse(
+        readFileSync(path.join(raiz, 'apps', 'bff', 'package.json'), 'utf8'),
+      ) as Record<string, unknown>
+      return pacote.prisma !== undefined
+    } catch {
+      // Nao conseguir ler nao e prova de que a chave nao existe. Mas bloquear
+      // por falta de informacao trava atualizacao sem motivo demonstrado.
+      return false
+    }
   }
 
   private precondicoes(

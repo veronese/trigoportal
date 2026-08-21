@@ -203,7 +203,12 @@ export const DEPENDENCIAS: DependenciaCatalogada[] = [
     tipo: 'desenvolvimento',
     papel: 'Linguagem e verificacao de tipos de todo o monorepo.',
     impactoMajor:
-      'TypeScript nao usa semver como o resto do ecossistema: toda minor pode introduzir erro ' +
-      'novo em codigo que compilava. Subir com `pnpm typecheck` a mao antes de comitar.',
+      'ACONTECEU AQUI em 21/08/2026: a 7.0 foi instalada e o BFF parou de INICIAR. Ela entrega ' +
+      'apenas o executavel tsc, sem a API programatica de compilacao que o Nest CLI usa, e ' +
+      'removeu `moduleResolution: node10`. O sintoma engana: o front sobe normal e da ' +
+      'ECONNREFUSED no proxy, parecendo problema de rede. A API deve voltar na 7.1. ' +
+      'Independente disso, TypeScript nao segue semver como o resto do ecossistema: toda minor ' +
+      'pode introduzir erro novo em codigo que compilava, entao rode `pnpm typecheck` E ' +
+      '`nest build` antes de comitar — typecheck sozinho nao exercita a API do compilador.',
   },
 ]

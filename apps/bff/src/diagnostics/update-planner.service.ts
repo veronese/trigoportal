@@ -67,17 +67,18 @@ const VERIFICACOES_POR_AREA: Record<string, string[]> = {
   ],
   'React + Next': [
     'pnpm --filter @trigo/web exec tsc --noEmit',
-    'NEXT_DIST_DIR=.next-build pnpm --filter @trigo/web exec next build',
+    'pnpm --filter @trigo/web exec next build   # pare o dev server antes, ou veja a nota do script',
     'Abrir o portal e FAZER LOGIN: o proxy /api/bff e o cookie same-site sao o ponto fragil',
-    'Navegar entre Cadastros e Configurador, conferindo o menu lateral',
+    'Acessar uma rota protegida SEM sessao: tem que redirecionar para /login. Major do Next pode',
+    '  mexer no middleware, e rota desprotegida nao aparece em build nem em typecheck',
   ],
   NestJS: [
     'pnpm --filter @trigo/bff exec nest build',
     'Subir o BFF e conferir que os dois guards globais continuam na ordem: autentica, depois autoriza',
-    'curl -s -o /dev/null -w "%{http_code}" http://localhost:3333/api/products   # deve ser 401, nao 200',
+    'GET http://localhost:3333/api/products sem sessao: tem que responder 401, nao 200',
   ],
   Tailwind: [
-    'NEXT_DIST_DIR=.next-build pnpm --filter @trigo/web exec next build',
+    'pnpm --filter @trigo/web exec next build',
     'Conferir as cores da marca: os tokens @theme vivem em apps/web/src/app/globals.css',
   ],
   zod: [
@@ -85,7 +86,14 @@ const VERIFICACOES_POR_AREA: Record<string, string[]> = {
     'pnpm typecheck',
     'Testar um formulario com erro (cadastro de usuario com e-mail invalido): o formato de issue mudou na v4',
   ],
-  typescript: ['pnpm typecheck   # TypeScript quebra codigo que compilava, mesmo em minor'],
+  // `pnpm typecheck` NAO basta: ele roda o `tsc`, que continua existindo. O que
+  // quebrou de fato em 21/08/2026 foi o `nest build`, porque o Nest CLI usa a
+  // API programatica do compilador — e nenhum typecheck exercita isso.
+  typescript: [
+    'pnpm typecheck',
+    'pnpm --filter @trigo/bff exec nest build   # o passo que pega quebra de API do compilador',
+    'pnpm dev e conferir que o BFF sobe: com TypeScript incompativel, ele nem inicia',
+  ],
 }
 
 @Injectable()
@@ -131,7 +139,7 @@ export class UpdatePlannerService {
 
     const escolhidas = dependencias.filter((d) => solicitados.includes(d.nome))
 
-    const bloqueios = this.bloqueios(escolhidas)
+    const bloqueios = this.bloqueios(escolhidas, dependencias)
     const permitidas = escolhidas.filter((d) => !bloqueios.some((b) => b.pacote === d.nome))
     const grupos = this.agrupar(permitidas, dependencias)
 
@@ -161,12 +169,40 @@ export class UpdatePlannerService {
    * Diferente de "risco alto": bloqueio e quando existe uma pendencia concreta
    * e conhecida que faria a atualizacao falhar.
    */
-  private bloqueios(escolhidas: DiagnosticoDependencia[]): BloqueioAtualizacao[] {
+  private bloqueios(
+    escolhidas: DiagnosticoDependencia[],
+    todas: DiagnosticoDependencia[],
+  ): BloqueioAtualizacao[] {
     const lista: BloqueioAtualizacao[] = []
+    const usaNestCli = todas.some((d) => d.nome === '@nestjs/cli')
 
     for (const dep of escolhidas) {
       const paraMajor = this.major(dep.versaoMaisRecente)
       const deMajor = this.major(dep.versaoInstalada)
+
+      // APRENDIDO NA PRATICA, em 21/08/2026: o TypeScript 7.0 foi instalado
+      // aqui e o BFF parou de INICIAR. A 7.0 entrega apenas o executavel `tsc`,
+      // sem a API programatica de compilacao que o Nest CLI usa — e sem o Nest
+      // CLI nao existe `nest build` nem `nest start`. A 7.0 tambem removeu
+      // `moduleResolution: node10`, que este monorepo usava.
+      //
+      // Isto e bloqueio, nao risco: typecheck e build passam a falhar de
+      // imediato, e o front sobe sozinho dando ECONNREFUSED no proxy — o que
+      // parece problema de rede e nao de versao de compilador.
+      if (dep.nome === 'typescript' && paraMajor >= 7 && deMajor < 7 && usaNestCli) {
+        lista.push({
+          pacote: dep.nome,
+          motivo:
+            'O TypeScript 7.0 nao expoe a API programatica de compilacao, e o Nest CLI depende ' +
+            'dela: com a 7.0 instalada o BFF nao inicia. A 7.0 tambem removeu ' +
+            '`moduleResolution: node10`, usado por packages/core e packages/api-client.',
+          comoResolver:
+            'Esperar a 7.1, que segundo a mensagem do proprio Nest devolve a API. Enquanto isso, ' +
+            'a faixa segura e 5.9 (a versao em uso) — ou a 6, se houver necessidade de recurso ' +
+            'novo de linguagem. Antes de subir, confirme na release do @nestjs/cli que a versao ' +
+            'de TypeScript passou a ser suportada.',
+        })
+      }
 
       if ((dep.nome === 'prisma' || dep.nome === '@prisma/client') && paraMajor >= 7 && deMajor < 7) {
         lista.push({
@@ -358,11 +394,29 @@ export class UpdatePlannerService {
     ]
   }
 
+  /**
+   * Script na ordem dos grupos.
+   *
+   * NEUTRO DE SHELL de proposito: nenhuma linha usa construcao exclusiva de
+   * bash. A versao anterior tinha `NEXT_DIST_DIR=.next-build pnpm ...`, que e
+   * atribuicao inline de variavel — sintaxe que NAO existe no PowerShell, o
+   * shell padrao do Windows, onde este script e executado. `#`, `cd` e `pnpm`
+   * funcionam igual nos dois, entao basta nao usar mais nada.
+   */
   private script(grupos: GrupoAtualizacao[], raiz: string | null): string {
     const linhas: string[] = [
       '# Plano de atualizacao do Portal Trigo',
       '# Gerado pelo proprio portal. Execute UM GRUPO por vez, conferindo as',
       '# verificacoes antes de seguir. Se uma verificacao falhar, pare e use o rollback.',
+      '#',
+      '# Funciona em PowerShell e em bash: nenhuma linha usa sintaxe especifica.',
+      '#',
+      '# PARE O DEV SERVER antes de comecar. Com ele no ar, no Windows:',
+      '#   - `prisma generate` falha com EPERM (lock na DLL do engine)',
+      '#   - o `next build` disputa lock com o .next',
+      '# Se precisar buildar com o dev rodando, use um diretorio de saida separado:',
+      '#   PowerShell:  $env:NEXT_DIST_DIR=".next-build"; pnpm --filter @trigo/web exec next build',
+      '#   bash:        NEXT_DIST_DIR=.next-build pnpm --filter @trigo/web exec next build',
       '',
       `cd ${raiz ?? '<raiz do projeto>'}`,
       '',

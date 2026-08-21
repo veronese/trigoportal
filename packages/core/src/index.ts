@@ -1,0 +1,13 @@
+// Dominio compartilhado entre BFF, Web e (futuramente) o app React Native.
+// Regra: nada aqui pode importar React, DOM, Nest, Prisma ou qualquer runtime.
+export * from './auth/permissions'
+export * from './auth/schemas'
+export * from './users/types'
+export * from './settings/types'
+export * from './settings/schemas'
+export * from './products/types'
+export * from './protheus/types'
+export * from './database/types'
+export * from './diagnostics/types'
+export * from './diagnostics/update-plan'
+export * from './http/contracts'

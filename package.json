@@ -1,0 +1,30 @@
+{
+  "name": "trigo-portal",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "bootstrap": "pnpm install && pnpm build:packages && pnpm --filter @trigo/bff db:push && pnpm --filter @trigo/bff db:seed",
+    "build:packages": "pnpm --filter @trigo/core build && pnpm --filter @trigo/api-client build",
+    "dev": "pnpm -r --parallel dev",
+    "build": "pnpm build:packages && pnpm --filter @trigo/bff build && pnpm --filter @trigo/web build",
+    "typecheck": "pnpm -r typecheck",
+    "db:studio": "pnpm --filter @trigo/bff db:studio",
+    "db:seed": "pnpm --filter @trigo/bff db:seed"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.2"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@prisma/client",
+      "@prisma/engines",
+      "prisma",
+      "esbuild",
+      "sharp",
+      "unrs-resolver"
+    ]
+  }
+}

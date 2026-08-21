@@ -1,0 +1,9 @@
+{
+  "//": "Os scripts rodam via tsx e ficam fora do build do Nest, entao o tsconfig principal nao os cobre. Este arquivo existe para eles tambem serem verificados.",
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": "."
+  },
+  "include": ["scripts/**/*.ts", "prisma/*.ts", "src/**/*.ts"]
+}

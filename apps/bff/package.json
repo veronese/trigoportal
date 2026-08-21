@@ -1,0 +1,53 @@
+{
+  "name": "@trigo/bff",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "nest start --watch",
+    "build": "prisma generate --schema prisma/schema.prisma && nest build",
+    "start": "node dist/main.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.scripts.json && tsx scripts/gerar-script-implantacao.ts --verificar && tsx scripts/gerar-schema-sqlite.ts --verificar",
+    "db:push": "tsx scripts/renomear-para-convencao.ts && prisma db push && prisma generate && tsx scripts/aplicar-sql.ts",
+    "db:studio": "prisma studio",
+    "db:seed": "prisma db seed",
+    "db:sql": "tsx scripts/aplicar-sql.ts",
+    "db:migrar-sqlite": "tsx scripts/migrar-sqlite-para-azure.ts",
+    "db:renomear": "tsx scripts/renomear-para-convencao.ts",
+    "db:gerar-script": "tsx scripts/gerar-script-implantacao.ts",
+    "db:verificar-script": "tsx scripts/gerar-script-implantacao.ts --verificar",
+    "db:sqlite:gerar": "tsx scripts/gerar-schema-sqlite.ts",
+    "db:sqlite:verificar": "tsx scripts/gerar-schema-sqlite.ts --verificar",
+    "db:local": "pnpm db:sqlite:gerar && prisma db push --schema prisma/schema.sqlite.prisma && prisma generate --schema prisma/schema.sqlite.prisma && tsx scripts/aplicar-sql.ts --sqlite && prisma db seed --schema prisma/schema.sqlite.prisma",
+    "db:sqlserver": "prisma generate --schema prisma/schema.prisma",
+    "db:sqlite": "pnpm db:sqlite:gerar && prisma generate --schema prisma/schema.sqlite.prisma",
+    "carregar-produtos": "nest build && node dist/products/carregar-produtos.cli.js",
+    "diagnostico": "nest build && node dist/diagnostics/diagnostico.cli.js"
+  },
+  "dependencies": {
+    "@nestjs/common": "^11.1.6",
+    "@nestjs/config": "^4.0.2",
+    "@nestjs/core": "^11.1.6",
+    "@nestjs/jwt": "^11.0.0",
+    "@nestjs/platform-express": "^11.1.6",
+    "@prisma/client": "^6.16.2",
+    "@trigo/core": "workspace:*",
+    "cookie-parser": "^1.4.7",
+    "helmet": "^8.1.0",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^11.0.10",
+    "@nestjs/schematics": "^11.0.8",
+    "@types/cookie-parser": "^1.4.9",
+    "@types/express": "^5.0.3",
+    "@types/node": "^22.18.1",
+    "prisma": "^6.16.2",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  }
+}

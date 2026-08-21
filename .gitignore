@@ -1,0 +1,28 @@
+node_modules/
+dist/
+.next/
+out/
+*.log
+.env
+.env.local
+!.env.example
+*.db
+*.db-journal
+.DS_Store
+.turbo/
+coverage/
+.next-build/
+
+# Copia de banco local. NAO casa com *.db por causa do sufixo, e contem hash de
+# senha e a credencial cifrada do Protheus — o furo mais facil de nao notar.
+*.db.backup*
+*.db.antigo
+*.sqlite
+
+# Cache incremental do tsc. O do BFF fica dentro do dist (ver tsconfig.json),
+# mas o dos scripts nao.
+*.tsbuildinfo
+
+# Saida de build alternativa, usada no Windows para nao disputar lock com o
+# dev server (NEXT_DIST_DIR).
+.next-build/

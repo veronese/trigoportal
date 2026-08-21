@@ -1,0 +1,101 @@
+@import "tailwindcss";
+
+/**
+ * Identidade visual Grupo Trigo.
+ * Extraida de https://grupotrigo.com.br (variaveis CSS do site + logo oficial).
+ *
+ * Escala de marca -> --amarelo-trigo #fab900 (= --amarelo-spoleto)
+ * Escala de tinta -> --cinza-escuro #2f3237, --cinza-trigo #6a6a6a,
+ *                    --cinza-medio #878787, --cinza-claro #cccccc,
+ *                    --cinza-china #f0f0f0
+ * Vermelho        -> --vermelho-china #e33324
+ *
+ * REGRA DE CONTRASTE: o amarelo #fab900 NUNCA recebe texto branco (1,8:1 reprova
+ * em WCAG AA). Sobre amarelo vai sempre tinta ink-900 (7,5:1), como o proprio
+ * site faz nos badges de categoria.
+ */
+@theme {
+  /* Amarelo Trigo — 500 e o valor oficial; o resto e escala derivada */
+  --color-brand-50: #fff9e6;
+  --color-brand-100: #ffefb8;
+  --color-brand-200: #ffe48a;
+  --color-brand-300: #ffd64d;
+  --color-brand-400: #fdc61f;
+  --color-brand-500: #fab900;
+  --color-brand-600: #d99f00;
+  --color-brand-700: #a87b00;
+
+  /* Cinzas Trigo */
+  --color-ink-50: #f7f7f8;
+  --color-ink-100: #f0f0f0;
+  --color-ink-200: #cccccc;
+  --color-ink-300: #b4b4b4;
+  --color-ink-400: #878787;
+  --color-ink-500: #6a6a6a;
+  --color-ink-600: #545659;
+  --color-ink-700: #43464a;
+  --color-ink-800: #383a3f;
+  --color-ink-900: #2f3237;
+
+  /* --bege do site institucional; e o campo de fundo do simbolo da marca */
+  --color-bege: #fbf1e7;
+
+  /* Papeis semanticos */
+  --color-surface: #ffffff;
+  --color-surface-muted: #f0f0f0;
+  --color-border-subtle: #e2e2e3;
+  --color-border-strong: #cccccc;
+
+  /* --vermelho-china no 500 (bordas, destaque) e --vermelho-escuro no 700.
+     Branco sobre o 500 da 4,41:1 e reprova AA, entao botao destrutivo usa o 700. */
+  --color-danger-50: #fdecea;
+  --color-danger-500: #e33324;
+  --color-danger-700: #96222b;
+  --color-danger-800: #7a1c23;
+
+  --color-success-50: #ecfdf3;
+  --color-success-600: #067647;
+
+  --radius-card: 0.875rem;
+
+  /* Sombra suave e difusa, no lugar da sombra dura padrao. E o que da ao
+     Architect UI a sensacao de card "flutuando" sem peso visual. */
+  --shadow-card: 0 1px 2px rgba(47, 50, 55, 0.04), 0 4px 16px rgba(47, 50, 55, 0.06);
+  --shadow-card-hover: 0 2px 4px rgba(47, 50, 55, 0.06), 0 8px 24px rgba(47, 50, 55, 0.1);
+
+  --font-sans: var(--font-montserrat), ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background-color: var(--color-surface-muted);
+  color: var(--color-ink-900);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Titulos em Montserrat SemiBold, como no site institucional. */
+h1,
+h2,
+h3 {
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+/* Evita o zoom automatico do Safari iOS ao focar um input (fonte < 16px). */
+@media (max-width: 768px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
+/* Respeita a safe area do iPhone quando instalado como PWA. */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}

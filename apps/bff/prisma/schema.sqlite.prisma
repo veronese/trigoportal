@@ -1,0 +1,313 @@
+// ============================================================================
+// ARQUIVO GERADO — nao edite a mao.
+//
+// Origem: prisma/schema.prisma (SQL Server, que e a producao e a fonte de
+// verdade). Regere com:
+//
+//   pnpm --filter @trigo/bff db:sqlite:gerar
+//
+// Serve apenas para desenvolvimento local em arquivo, sem servidor de banco.
+// Diferencas em relacao ao original, todas mecanicas: provider sqlite, sem
+// tipos nativos @db.* e sem nome de constraint (map:). Modelos, campos e nomes
+// de tabela/coluna sao identicos.
+//
+// LIMITE CONHECIDO: o SQLite compara texto com case SENSITIVE por padrao. A
+// busca por nome/e-mail e por descricao de produto, que em SQL Server ignora
+// caixa por causa da collation CI, aqui diferencia. E uma diferenca de
+// comportamento entre dev e producao — nao um defeito do portal.
+// ============================================================================
+
+// Azure SQL Database (SQL Server).
+//
+// ============================================================================
+// CONVENCAO DE NOMES NO BANCO  (ver README > Convencao de nomes)
+// ============================================================================
+//   Tabela .......... tp_<plural_em_snake_case>      tp_users, tp_parameters
+//   Coluna .......... snake_case                     password_hash, is_active
+//   Booleano ........ is_ / has_ / must_             is_active, must_change_password
+//   Data/hora ....... sufixo _at ou _until           created_at, locked_until
+//   PK .............. tp_<tabela>_pk
+//   Unico ........... tp_<tabela>_<colunas>_uq
+//   Indice .......... tp_<tabela>_<colunas>_idx
+//
+// O modelo Prisma segue PascalCase em ingles, com @@map/@map traduzindo para o
+// banco. Assim `prisma.user.findMany()` nao muda no codigo, e o SQL fica no
+// padrao de SQL. Nomes de constraint sao fixados com `map:` de proposito: sem
+// isso o Prisma inventa o nome e a convencao se perde.
+//
+// PALAVRAS RESERVADAS evitadas: `User` (erro 156 sem colchetes), `group`
+// (de GROUP BY) e `value`. Prefixo tp_ e sufixo descritivo resolvem de vez.
+//
+// ============================================================================
+// TRES CUIDADOS especificos do SQL Server, aprendidos na migracao do SQLite e
+// que nao aparecem em teste com pouco dado:
+// ============================================================================
+// 1. TAMANHO EM COLUNA INDEXADA. Sem `` o Prisma mapeia String
+//    para NVARCHAR(1000) = 2000 bytes. O limite de chave de indice do SQL Server
+//    e 900 bytes (clustered) e 1700 (nonclustered), entao a PK e o unico de
+//    e-mail nem seriam criados. Toda coluna indexada tem tamanho explicito.
+//
+// 2. NULL EM CONSTRAINT UNICA. SQL Server trata NULLs como IGUAIS; SQLite e
+//    PostgreSQL tratam como distintos. Um @@unique([provider, externalId])
+//    comum rejeitaria o segundo usuario local (todos tem external_id NULL).
+//    A unicidade real vive no indice filtrado de prisma/sql/.
+//
+// 3. TEXTO LONGO. current_value guarda credencial cifrada: com senha no limite
+//    do schema o ciphertext passa de 1000 caracteres. Usa NVarChar(Max).
+//
+// A collation padrao do Azure SQL e case-insensitive (CI_AS): a busca por
+// nome/e-mail em Cadastros > Usuarios ignora maiusculas, o que no SQLite nao
+// acontecia.
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL_SQLITE")
+}
+
+model User {
+  id           String  @id @default(uuid())
+  name         String
+  email        String  @unique
+  passwordHash String? @map("password_hash")
+  role         String  @default("USER")
+  isActive     Boolean @default(true) @map("is_active")
+
+  // Origem da identidade: "local" agora; "protheus" / "entra" na fase 2.
+  provider   String  @default("local")
+  externalId String? @map("external_id")
+
+  // Incrementar invalida todos os JWT emitidos para o usuario (revogacao de sessao).
+  tokenVersion Int @default(0) @map("token_version")
+
+  // Trava a sessao na tela de troca de senha. Marcado quando um admin cria o
+  // usuario (se SENHA_EXIGE_TROCA_PRIMEIRO_ACESSO estiver ativo) e sempre que
+  // um admin redefine a senha de alguem.
+  mustChangePassword Boolean   @default(false) @map("must_change_password")
+  passwordChangedAt  DateTime? @map("password_changed_at")
+
+  // Quando a senha provisoria atual foi emitida. Serve para o prazo de
+  // validade (SENHA_PROVISORIA_VALIDADE_HORAS).
+  provisionalPasswordAt DateTime? @map("provisional_password_at")
+
+  // Bloqueio por tentativas. Zerado a cada login bem-sucedido.
+  failedLoginAttempts Int       @default(0) @map("failed_login_attempts")
+  lockedUntil         DateTime? @map("locked_until")
+
+  lastLoginAt DateTime? @map("last_login_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@index([isActive])
+  @@index([provider, externalId])
+  @@map("tp_users")
+}
+
+/// Modulo Configurador: parametrizacao sistemica.
+/// Uma linha por parametro, no espirito da SX6 do Protheus.
+///
+/// EXCECAO CONSCIENTE a regra "PK sempre id": `key` E a identidade do parametro
+/// — o catalogo, a API e o cache todos o enderecam por ela. Um id surrogate
+/// aqui seria coluna que ninguem usa.
+model Parameter {
+  key         String  @id
+  label       String
+  description String?
+
+  /// `group` e palavra reservada (GROUP BY): mapeada para group_name.
+  group String @map("group_name")
+
+  /// Tipo do valor: STRING | NUMBER | BOOLEAN | SECRET | CREDENTIAL.
+  type String @default("STRING") @map("value_type")
+
+  /// Sempre string. A coercao acontece na leitura, conforme `type`.
+  /// NVarChar(Max): credencial cifrada passa de 1000 caracteres.
+  /// `value` tambem e ambiguo em SQL: mapeado para current_value.
+  value        String? @map("current_value")
+  defaultValue String? @map("default_value")
+
+  /// SECRET e CREDENTIAL nunca saem do servidor: a API devolve apenas hasValue.
+  isSecret Boolean @default(false) @map("is_secret")
+
+  /// e-mail de quem alterou por ultimo — rastreabilidade sem tabela de auditoria.
+  updatedBy String?  @map("updated_by")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([group])
+  @@map("tp_parameters")
+}
+
+// ============================================================================
+// Espelho de cadastros do Protheus
+// ============================================================================
+// Copia local dos cadastros do ERP, para o portal consultar sem bater no
+// appserver a cada tela. O Protheus segue sendo a fonte de verdade: aqui nada
+// e editado pelo portal, so sincronizado.
+//
+// `syncedAt` em toda tabela: sem ele nao se distingue "registro nao existe no
+// Protheus" de "sincronizacao nunca rodou".
+
+/// Empresas e filiais, espelhadas de SYS_COMPANY.
+model Company {
+  id String @id @default(uuid())
+
+  /// M0_CODIGO — grupo de empresa.
+  code   String
+  /// M0_CODFIL — filial.
+  branch String
+
+  /// M0_NOME — razao social do grupo.
+  corporateName String  @map("corporate_name")
+  /// M0_FILIAL — nome da filial.
+  branchName    String? @map("branch_name")
+  /// M0_CGC
+  taxId         String? @map("tax_id")
+  /// M0_ESTCOB / M0_CIDCOB
+  state         String?
+  city          String?
+
+  isActive Boolean  @default(true) @map("is_active")
+  syncedAt DateTime @map("synced_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([code, branch])
+  @@map("tp_companies")
+}
+
+/// Produtos unificados de SB1020 e SB1090 num cadastro so.
+model Product {
+  id String @id @default(uuid())
+
+  /// EMPORI — coluna do PORTAL, nao do Protheus: identifica a empresa de ORIGEM
+  /// do registro no cadastro unificado. Recebe sempre o codigo da empresa de
+  /// onde a linha veio, sem excecao:
+  ///   SB1020 -> '02'
+  ///   SB1090 -> '09'
+  ///
+  /// NOT NULL de proposito: o SQL Server trata NULL como valor IGUAL em indice
+  /// unico, entao (NULL, codigo) quebraria a unicidade do cadastro.
+  empori String @default("")
+
+  /// Tabela fisica de origem, para rastreabilidade. EMPORI e a regra de
+  /// negocio; isto e o fato bruto de onde a linha veio.
+  sourceTable String @map("source_table")
+
+  /// B1_COD
+  code             String
+  /// B1_DESC
+  description      String
+  /// B1_TIPO
+  type             String?
+  /// B1_UM
+  unit             String?
+  /// B1_GRUPO
+  group            String? @map("group_code")
+  /// B1_LOCPAD — armazem padrao.
+  defaultWarehouse String? @map("default_warehouse")
+  /// B1_POSIPI — classificacao fiscal (NCM).
+  ncm              String?
+  /// B1_MODELO — modelo fiscal do documento.
+  fiscalModel      String? @map("fiscal_model")
+
+  /// B1_MSBLQL == '1'. No Protheus '2' e vazio significam liberado.
+  isBlocked Boolean @default(false) @map("is_blocked")
+  /// B1_ATIVO. Dominio S/N; vazio conta como ativo, que e o padrao do ERP.
+  isActive  Boolean @default(true) @map("is_active")
+
+  // Contas contabeis. As tres com prefixo X sao campos customizados do Trigo,
+  // por isso nao aparecem em SB1 de instalacao padrao.
+  /// B1_XCTACUS — centro de custo.
+  costCenter     String? @map("cost_center")
+  /// B1_XCTADES — conta de despesa.
+  expenseAccount String? @map("expense_account")
+  /// B1_XCONTA — conta do ativo.
+  assetAccount   String? @map("asset_account")
+  /// B1_CONTA — conta de receita.
+  revenueAccount String? @map("revenue_account")
+
+  /// NAO vem do zWsProdutos: o endpoint nao devolve B1_PRV1. Fica reservado
+  /// para quando houver fonte de preco, e por isso sempre NULL hoje.
+  salePrice Decimal? @map("sale_price")
+
+  syncedAt DateTime @map("synced_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([empori, code])
+  @@index([description])
+  @@index([group])
+  @@map("tp_products")
+}
+
+/// Clientes de SA1090. Tabela unica, compartilhada entre as empresas — por
+/// isso NAO tem empori: nao ha origem a distinguir.
+model Customer {
+  id String @id @default(uuid())
+
+  /// A1_COD / A1_LOJA
+  code  String
+  store String
+
+  /// A1_NOME / A1_NREDUZ
+  name      String
+  shortName String? @map("short_name")
+  /// A1_CGC
+  taxId     String? @map("tax_id")
+  /// A1_EST / A1_MUN
+  state     String?
+  city      String?
+  /// A1_TEL / A1_EMAIL
+  phone     String?
+  email     String?
+  /// A1_MSBLQL = '1'
+  isBlocked Boolean @default(false) @map("is_blocked")
+
+  syncedAt DateTime @map("synced_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([code, store])
+  @@index([name])
+  @@index([taxId])
+  @@map("tp_customers")
+}
+
+/// Fornecedores de SA2090. Mesma logica do Customer: tabela unica compartilhada.
+model Supplier {
+  id String @id @default(uuid())
+
+  /// A2_COD / A2_LOJA
+  code  String
+  store String
+
+  /// A2_NOME / A2_NREDUZ
+  name      String
+  shortName String? @map("short_name")
+  /// A2_CGC
+  taxId     String? @map("tax_id")
+  /// A2_EST / A2_MUN
+  state     String?
+  city      String?
+  /// A2_TEL / A2_EMAIL
+  phone     String?
+  email     String?
+  /// A2_MSBLQL = '1'
+  isBlocked Boolean @default(false) @map("is_blocked")
+
+  syncedAt DateTime @map("synced_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([code, store])
+  @@index([name])
+  @@index([taxId])
+  @@map("tp_suppliers")
+}

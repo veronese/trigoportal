@@ -1,0 +1,105 @@
+#include "totvs.ch"
+#include "restful.ch"
+#include "tlpp-core.th"
+
+//-------------------------------------------------------------------
+// GTRWSRPT - Web service REST de cadastros para o Portal Trigo.
+//
+// Escopo atual: somente o cadastro de empresas e filiais (SYS_COMPANY).
+// Novas rotas entram como mais um WSMETHOD dentro do mesmo WSRESTFUL.
+//
+// Rota:  GET {rest}/portal/v1/empresas
+//
+// Depois de compilar, REINICIE O JOB REST do appserver: a tabela de
+// rotas e montada na subida do servico, rota nova nao aparece sozinha.
+//-------------------------------------------------------------------
+
+/*/{Protheus.doc} GTRPTRIGO
+Servico REST de cadastros do Portal Trigo.
+
+@author  Grupo Trigo
+@since   08/2026
+@version 1.0
+/*/
+WSRESTFUL GTRPTRIGO DESCRIPTION "Cadastros para o Portal Trigo" FORMAT APPLICATION_JSON
+
+	WSMETHOD GET empresas DESCRIPTION "Empresas e filiais (SYS_COMPANY)" WSSYNTAX "/portal/v1/empresas" PATH "/portal/v1/empresas" PRODUCES APPLICATION_JSON
+
+END WSRESTFUL
+
+/*/{Protheus.doc} GTRPTRIGO::empresas
+Devolve todas as empresas e filiais cadastradas em SYS_COMPANY.
+
+@return logical  .T. sempre. Erro de execucao e tratado pelo WSRESTFUL,
+                 que responde HTTP 500.
+
+@obs     SYS_COMPANY nao tem campo de filial nem depende de tenantId:
+         ela E a tabela que define as empresas e filiais.
+@obs     Sem paginacao de proposito. O volume e de dezenas de linhas, e
+         paginar aqui seria complexidade sem ganho.
+@obs     A consulta nao recebe nenhum valor do cliente, portanto nao
+         precisa de statement preparado - nao existe valor dinamico.
+@obs     O alias e fechado antes de montar a resposta, e o Select() >  0
+         cobre o caso de a consulta ter falhado: alias vazado esgota a
+         area de trabalho do appserver.
+/*/
+WSMETHOD GET empresas WSSERVICE GTRPTRIGO
+
+	Local aArea     as array
+	Local aItens    as array
+	Local cQuery    as character
+	Local cAliasTmp as character
+	Local oItem     as object
+	Local oResposta as object
+
+	aArea     := GetArea()
+	aItens    := {}
+	cAliasTmp := GetNextAlias()
+
+	::SetContentType("application/json")
+
+	cQuery := " SELECT T.M0_CODIGO, T.M0_CODFIL, T.M0_FILIAL, "
+	cQuery += "        T.M0_NOME, T.M0_NOMECOM, T.M0_CGC, "
+	cQuery += "        T.R_E_C_N_O_ AS RECNOPRT "
+	cQuery += "   FROM SYS_COMPANY T WITH (%nolock%) "
+	cQuery += "  WHERE T.D_E_L_E_T_ = ' ' "
+	cQuery += "  ORDER BY T.M0_CODIGO, T.M0_CODFIL "
+
+	cQuery := ChangeQuery(cQuery)
+
+	DbUseArea(.T., "TOPCONN", TCGenQry(,, cQuery), cAliasTmp, .F., .T.)
+
+	While !(cAliasTmp)->(Eof())
+
+		oItem := JsonObject():New()
+
+		// RTrim em todo campo character: sem isso o portal gravaria
+		// "02        " no lugar de "02".
+		oItem["empresa"]      := RTrim((cAliasTmp)->M0_CODIGO)
+		oItem["filial"]       := RTrim((cAliasTmp)->M0_CODFIL)
+		oItem["nomeFilial"]   := RTrim((cAliasTmp)->M0_FILIAL)
+		oItem["razaoSocial"]  := RTrim((cAliasTmp)->M0_NOME)
+		oItem["nomeFantasia"] := RTrim((cAliasTmp)->M0_NOMECOM)
+		oItem["cnpj"]         := RTrim((cAliasTmp)->M0_CGC)
+		oItem["recno"]        := (cAliasTmp)->RECNOPRT
+
+		aAdd(aItens, oItem)
+
+		(cAliasTmp)->(DbSkip())
+
+	EndDo
+
+	If Select(cAliasTmp) > 0
+		(cAliasTmp)->(DbCloseArea())
+	EndIf
+
+	oResposta := JsonObject():New()
+	oResposta["total"] := Len(aItens)
+	oResposta["items"] := aItens
+
+	::SetResponse(oResposta:ToJson())
+
+	FreeObj(oResposta)
+	RestArea(aArea)
+
+Return .T.

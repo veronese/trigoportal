@@ -1,0 +1,23 @@
+# Fim de linha travado por tipo de arquivo, independente da configuracao local
+# de cada maquina.
+#
+# POR QUE ISTO IMPORTA AQUI: os fontes AdvPL/TLPP do Trigo sao LF, e no Windows
+# muita instalacao do Git vem com core.autocrlf=true. Sem esta regra, quem
+# clonar recebe o .tlpp convertido para CRLF — e ja perdemos tempo neste projeto
+# investigando fim de linha como suspeito de erro de compilacao.
+*.tlpp   text eol=lf
+*.prw    text eol=lf
+*.prx    text eol=lf
+*.ch     text eol=lf
+*.th     text eol=lf
+
+# Script de banco: gerado com LF pelo db:gerar-script. Deixar o Git converter
+# faria o drift check acusar diferenca que nao existe.
+*.sql    text eol=lf
+
+# Binarios: nunca converter nem tentar mostrar diff de texto.
+*.db     binary
+*.png    binary
+*.jpg    binary
+*.ico    binary
+*.woff2  binary

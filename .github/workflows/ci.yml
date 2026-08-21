@@ -1,0 +1,104 @@
+# Verificacao automatica a cada push e pull request.
+#
+# POR QUE ISTO EXISTE: hoje a verificacao do projeto e uma sequencia de comandos
+# rodados a mao, e "rodei o typecheck" depende de alguem lembrar. Aqui ela passa
+# a ser condicao para o codigo entrar na main.
+#
+# O QUE ELE PEGA que revisao de codigo nao pega:
+#  - script de implantacao desatualizado em relacao ao schema.prisma
+#  - schema SQLite desatualizado em relacao ao de SQL Server
+#  - erro de tipo em pacote que ninguem recompilou local
+#  - build do front quebrado, que so aparece no `next build`
+#
+# NAO faz deploy. Publicar e uma decisao separada, com aprovacao — ver o
+# workflow de implantacao quando o servidor existir.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Push novo na mesma branch cancela a execucao anterior: nao ha valor em
+# verificar um commit que ja foi substituido.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # 22 e o minimo declarado em engines; 24 e o que roda na maquina de
+        # desenvolvimento. Testar os dois impede a situacao em que o projeto so
+        # funciona na versao de quem escreveu.
+        node: [22, 24]
+
+    env:
+      # `prisma generate` nao conecta no banco, mas exige a variavel declarada.
+      # Valor de mentira de proposito: se algum comando tentar conectar, falha
+      # aqui em vez de vazar credencial no log.
+      DATABASE_URL: 'sqlserver://ci-nao-conecta:1433;database=ci;user=ci;password=ci;encrypt=true;trustServerCertificate=true'
+      DATABASE_URL_SQLITE: 'file:./ci.db'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: pnpm
+
+      # --frozen-lockfile faz a instalacao FALHAR se o pnpm-lock.yaml nao
+      # corresponder aos package.json. Sem isso, um lock esquecido passaria e o
+      # servidor instalaria uma arvore diferente da testada aqui.
+      - name: Instalar dependencias
+        run: pnpm install --frozen-lockfile
+
+      - name: Gerar client do Prisma
+        run: pnpm --filter @trigo/bff exec prisma generate --schema prisma/schema.prisma
+
+      - name: Compilar pacotes compartilhados
+        run: pnpm build:packages
+
+      # Inclui os dois drift checks: deploy/criar-banco.sql e
+      # prisma/schema.sqlite.prisma tem que estar coerentes com o schema.
+      - name: Verificar tipos e artefatos gerados
+        run: pnpm typecheck
+
+      - name: Build do BFF
+        run: pnpm --filter @trigo/bff exec nest build
+
+      - name: Build do front
+        run: pnpm --filter @trigo/web exec next build
+
+      # NAO rodamos `pnpm diagnostico` aqui: ele avalia um AMBIENTE (banco
+      # alcancavel, .env preenchido) e sai com codigo 1 quando falta algo. No CI
+      # a ausencia de .env e legitima, entao o passo seria vermelho por desenho —
+      # e passo sempre vermelho ensina a ignorar o CI. O diagnostico e ferramenta
+      # de servidor, nao de pipeline.
+
+  segredos:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Guarda-corpo simples e barato. O furo que quase aconteceu neste projeto
+      # foi um `dev.db.backup-antes-azure` que nao casava com *.db no gitignore
+      # e levaria hash de senha para o repositorio.
+      - name: Nenhum arquivo de segredo versionado
+        run: |
+          encontrados=$(git ls-files | grep -E '(^|/)\.env$|(^|/)\.env\.local$|\.db$|\.db\.backup|\.sqlite$' || true)
+          if [ -n "$encontrados" ]; then
+            echo "::error::Arquivo que nao deve ser versionado esta no repositorio:"
+            echo "$encontrados"
+            exit 1
+          fi
+          echo "Nenhum arquivo de segredo versionado."

@@ -31,9 +31,22 @@
 #   3. NODE_VERSION '20.x' esta ABAIXO do minimo do projeto (engines: >=22).
 #   4. Publica a raiz do repositorio (`AZURE_WEBAPP_PACKAGE_PATH: '.'`), o que
 #      inclui node_modules, em vez do artefato de build.
-#   5. Decisao pendente de arquitetura: se o portal for para o Azure Web Apps, ele
-#      precisa alcancar o SQL Server local e o Protheus on-premises — o que exige
-#      VPN ou conexao hibrida. Ver a secao de implantacao no README.
+#
+# DECISAO DE ARQUITETURA (21/08/2026): o destino NAO e Azure Web Apps.
+#
+#   agora   -> servidor local na rede corporativa, SQL Server local
+#   depois  -> VM no Azure, com o banco em VM tambem (IaaS, nao PaaS)
+#
+# Web Apps e PaaS: publica-se um pacote e a plataforma executa. VM e sistema
+# operacional inteiro, onde o portal roda como servico atras de proxy reverso.
+# Sao mecanismos de implantacao diferentes, e este arquivo serve ao primeiro.
+#
+# Ou seja: este workflow provavelmente deve ser APAGADO, nao consertado. Ficou
+# aqui porque a decisao de remover e de quem mantem o repositorio.
+#
+# O lado bom da escolha: servidor local e VM no Azure sao os dois um SO completo,
+# entao o mesmo mecanismo de implantacao serve para os dois — muda o endereco,
+# nao o processo. Nada aqui precisa ser refeito na migracao.
 #
 # A verificacao de codigo (tipos, build, drift, segredo) esta em ci.yml, que
 # funciona e roda a cada push.

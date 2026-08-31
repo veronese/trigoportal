@@ -311,3 +311,306 @@ model Supplier {
   @@index([taxId])
   @@map("tp_suppliers")
 }
+
+// ============================================================================
+// FICHAS TECNICAS
+// ============================================================================
+//
+// DECISAO CENTRAL — versao e COPIA, nao referencia.
+//
+// O escopo exige que uma versao salva nunca mude: "se um custo de insumo for
+// atualizado, a ficha atual recalcula, mas as versoes salvas mantem os valores
+// da epoca". Duas formas de conseguir isso:
+//
+//   a) guardar a versao como um JSON congelado;
+//   b) guardar linhas normalizadas e COPIAR o preco para dentro do item.
+//
+// Escolhida a (b). O motivo e a busca: o escopo pede pesquisar ficha por
+// INSUMO, e insumo dentro de JSON exige OPENJSON no SQL Server — consulta que
+// nao aproveita indice e que ninguem entende seis meses depois. Com linha
+// normalizada, e um join.
+//
+// O preco vive no item da etapa, nao no insumo, justamente para a versao antiga
+// nao se mexer quando o custo do insumo mudar. Criar versao nova copia as
+// linhas; a versao anterior fica intacta por construcao.
+//
+// ESTA ONDA cobre a Ficha de CUSTO. Ficha de Processo, kits e comparacao de
+// versoes entram na proxima, em tabelas proprias.
+
+/// Marca ou loja. Primeiro nivel das pastas de fichas.
+model FichaRestaurante {
+  id   String @id @default(uuid())
+  nome String
+
+  /// Cor do cabecalho do PDF, para identificar a marca no documento (#RRGGBB).
+  cor String @default("#2f3237")
+
+  ativo  Boolean @default(true)
+  fichas Ficha[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([nome])
+  @@map("tp_ficha_restaurantes")
+}
+
+/// Linha de produto (Molhos, Massas, Paes especiais). Segundo nivel das pastas.
+model FichaLinha {
+  id   String @id @default(uuid())
+  nome String
+
+  ativo  Boolean @default(true)
+  fichas Ficha[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([nome])
+  @@map("tp_ficha_linhas")
+}
+
+/// Insumo usado nas fichas: materia-prima ou embalagem.
+model FichaInsumo {
+  id        String @id @default(uuid())
+  codigo    String
+  descricao String
+
+  /// Insumo de receita e sempre KG. Embalagem tem unidade livre (M, UNID, BOB).
+  unidade String @default("KG")
+
+  /// materia | embalagem
+  categoria String @default("materia")
+
+  /// Custo unitario ATUAL, vindo do Protheus. O item da etapa guarda a propria
+  /// copia: este campo e o valor de hoje, aquele e o da epoca da versao.
+  custoReferencia Decimal? @map("custo_referencia")
+
+  /// Codigo oficial no Protheus. Nulo enquanto o insumo e provisorio.
+  codigoProtheus String? @map("codigo_protheus")
+
+  /// oficial | provisorio — provisorio gera pendencia de relacionamento, e o
+  /// escopo exige que a ficha funcione mesmo sem o Protheus disponivel.
+  statusIntegracao String @default("provisorio") @map("status_integracao")
+
+  atualizadoEm DateTime? @map("atualizado_em")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([codigo])
+  @@index([descricao])
+  @@index([statusIntegracao])
+  @@map("tp_ficha_insumos")
+}
+
+/// O produto. As pastas saem daqui: restaurante + linha definem onde ele aparece.
+model Ficha {
+  id     String @id @default(uuid())
+  codigo String
+  nome   String
+
+  restauranteId String           @map("restaurante_id")
+  restaurante   FichaRestaurante @relation(fields: [restauranteId], references: [id])
+  linhaId       String           @map("linha_id")
+  linha         FichaLinha       @relation(fields: [linhaId], references: [id])
+
+  categoria String?
+
+  /// Ficha em teste nao afeta a base oficial e nao vai para o Protheus.
+  emTeste Boolean @default(false) @map("em_teste")
+
+  versoes   FichaVersao[]
+  historico FichaHistorico[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([codigo])
+  @@index([nome])
+  @@index([restauranteId, linhaId])
+  @@map("tp_fichas")
+}
+
+/// Uma versao completa da ficha. Imutavel depois de sair de rascunho.
+model FichaVersao {
+  id      String @id @default(uuid())
+  fichaId String @map("ficha_id")
+  ficha   Ficha  @relation(fields: [fichaId], references: [id], onDelete: Cascade)
+
+  /// custo | processo — o mesmo produto tem as duas, cada uma com suas versoes.
+  tipo String
+
+  numero Int
+  /// Nome livre dado pelo usuario ("Mix Fornecedor A/B").
+  nome   String?
+  /// Por que esta versao foi criada.
+  motivo String?
+
+  /// rascunho | em_aprovacao | vigente | obsoleta
+  status String @default("rascunho")
+
+  /// Peso da unidade acabada, em kg. Base do custo por unidade.
+  pesoUnitario Decimal? @map("peso_unitario")
+  precoVenda   Decimal? @map("preco_venda")
+
+  // KPIs CONGELADOS quando a versao sai de rascunho. Guardados e nao
+  // recalculados de proposito: o custo de um insumo muda depois, e a versao
+  // antiga tem que continuar respondendo o mesmo numero. Em rascunho ficam
+  // nulos, porque ali o valor e recalculado a cada leitura.
+  custoBatida  Decimal? @map("custo_batida")
+  rendimentoKg Decimal? @map("rendimento_kg")
+  custoKg      Decimal? @map("custo_kg")
+  custoUnidade Decimal? @map("custo_unidade")
+
+  criadoPor   String    @map("criado_por")
+  congeladoEm DateTime? @map("congelado_em")
+
+  etapas     FichaEtapa[]
+  aprovacoes FichaAprovacao[]
+  historico  FichaHistorico[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([fichaId, tipo, numero])
+  @@index([status])
+  @@map("tp_ficha_versoes")
+}
+
+/// Etapa da composicao: Massa, Molho, Montagem, Embalagem.
+model FichaEtapa {
+  id       String      @id @default(uuid())
+  versaoId String      @map("versao_id")
+  versao   FichaVersao @relation(fields: [versaoId], references: [id], onDelete: Cascade)
+
+  nome  String
+  /// receita | subreceita | montagem | processo | embalagem
+  tipo  String
+  ordem Int
+
+  /// Quando true, a soma dos percentuais dos itens e comparada com 100%.
+  usaPercentual Boolean @default(true) @map("usa_percentual")
+
+  /// Divisor das perdas rateadas: perda de fundo de caldeira acontece uma vez
+  /// por producao, nao a cada batida.
+  mediaBatidas Int @default(1) @map("media_batidas")
+
+  /// fator | perdas — os dois caminhos NAO dao o mesmo numero, e a ficha escolhe.
+  rendimentoModo  String   @default("perdas") @map("rendimento_modo")
+  rendimentoFator Decimal? @map("rendimento_fator")
+
+  itens  FichaItem[]
+  perdas FichaPerda[]
+
+  @@unique([versaoId, ordem])
+  @@map("tp_ficha_etapas")
+}
+
+/// Item de uma etapa: insumo, subreceita ou embalagem.
+model FichaItem {
+  id      String     @id @default(uuid())
+  etapaId String     @map("etapa_id")
+  etapa   FichaEtapa @relation(fields: [etapaId], references: [id], onDelete: Cascade)
+
+  ordem Int
+
+  // Codigo e descricao COPIADOS, nao referenciados: a versao historica tem que
+  // continuar legivel mesmo que o insumo seja renomeado ou saia do cadastro.
+  codigo    String
+  descricao String
+  unidade   String
+
+  /// fixa | multiplo_lote | saida_etapa | coef_rend | coef_linha
+  modo String @default("fixa")
+
+  qtd   Decimal?
+  /// Custo unitario DA EPOCA. E o que torna a versao imutavel de fato.
+  preco Decimal  @default(0)
+
+  base Decimal?
+  coef Decimal?
+  lote Int?
+
+  /// saida_etapa: id da etapa. coef_linha: id do item de referencia.
+  ref String?
+
+  /// Ligacao com o cadastro, para busca por insumo. Nula em item avulso.
+  insumoId String? @map("insumo_id")
+
+  @@index([etapaId, ordem])
+  @@index([insumoId])
+  @@index([codigo])
+  @@map("tp_ficha_itens")
+}
+
+/// Perda declarada na etapa (evaporacao, fundo de caldeira).
+model FichaPerda {
+  id      String     @id @default(uuid())
+  etapaId String     @map("etapa_id")
+  etapa   FichaEtapa @relation(fields: [etapaId], references: [id], onDelete: Cascade)
+
+  nome    String
+  valorKg Decimal @map("valor_kg")
+
+  /// Perda de uma batida so, diluida na media de batidas da etapa.
+  rateada Boolean @default(false)
+
+  ordem Int @default(0)
+
+  @@index([etapaId])
+  @@map("tp_ficha_perdas")
+}
+
+/// Assinatura de uma area sobre uma versao.
+model FichaAprovacao {
+  id       String      @id @default(uuid())
+  versaoId String      @map("versao_id")
+  versao   FichaVersao @relation(fields: [versaoId], references: [id], onDelete: Cascade)
+
+  /// pd | qualidade | fabrica | producao — AREA, nao pessoa: o escopo define os
+  /// aprovadores por cargo, e pessoa sai da empresa sem travar a ficha.
+  area String
+
+  /// Posicao na sequencia. Custo tem so P&D; processo tem as quatro em ordem.
+  ordem Int
+
+  /// pendente | aprovado | ajuste_solicitado
+  status String @default("pendente")
+
+  decididoPor   String?   @map("decidido_por")
+  decididoEm    DateTime? @map("decidido_em")
+  /// Obrigatoria quando o status e ajuste_solicitado.
+  justificativa String?
+
+  @@unique([versaoId, area])
+  @@index([status])
+  @@map("tp_ficha_aprovacoes")
+}
+
+/// Historico: responde "o que mudou", e nao se perde na troca de versao.
+model FichaHistorico {
+  id      String @id @default(uuid())
+  fichaId String @map("ficha_id")
+  ficha   Ficha  @relation(fields: [fichaId], references: [id], onDelete: Cascade)
+
+  /// Nula quando o evento e da ficha e nao de uma versao (ex: criacao).
+  ///
+  /// SEM CASCATA de proposito. O historico alcanca Ficha por dois caminhos —
+  /// direto e via FichaVersao — e o SQL Server recusa dois caminhos de cascata
+  /// para a mesma tabela. Quebrar aqui e o certo: excluir a ficha ja limpa o
+  /// historico pelo fichaId, e versao aprovada nao se exclui.
+  versaoId String?      @map("versao_id")
+  versao   FichaVersao? @relation(fields: [versaoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  /// criou | editou | enviou_aprovacao | aprovou | solicitou_ajuste | nova_versao
+  acao String
+
+  autor   String
+  detalhe String?
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([fichaId, createdAt])
+  @@map("tp_ficha_historico")
+}

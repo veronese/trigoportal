@@ -1,0 +1,284 @@
+{
+ "id": "r10",
+ "code": "FTC-P&D-088",
+ "name": "Molho Branco Cremoso Refrigerado",
+ "line": "Molho",
+ "versions": [
+  {
+   "peso_unit": 1.2,
+   "etapas": [
+    {
+     "id": "rec",
+     "nome": "Receita",
+     "tipo": "receita",
+     "ordem": 1,
+     "usa_percentual": true,
+     "itens": [
+      {
+       "codigo": "1",
+       "descricao": "Água",
+       "unidade": "KG",
+       "qtd": 460,
+       "preco": 0,
+       "modo": "fixa"
+      },
+      {
+       "codigo": "340014",
+       "descricao": "Farinha de Trigo",
+       "unidade": "KG",
+       "qtd": 23,
+       "preco": 3.210514285714286,
+       "modo": "fixa"
+      },
+      {
+       "codigo": "400001",
+       "descricao": "Leite em Pó",
+       "unidade": "KG",
+       "qtd": 46,
+       "preco": 17.940624444444445,
+       "modo": "fixa"
+      },
+      {
+       "codigo": "320014",
+       "descricao": "Manteiga sem sal",
+       "unidade": "KG",
+       "qtd": 23,
+       "preco": 32.56,
+       "modo": "fixa"
+      },
+      {
+       "codigo": "380022",
+       "descricao": "Sal refinado",
+       "unidade": "KG",
+       "qtd": 7.819805805042362,
+       "preco": 1.0177066666666665,
+       "modo": "fixa"
+      },
+      {
+       "codigo": "380120",
+       "descricao": "Goma Xantana",
+       "unidade": "KG",
+       "qtd": 0.45998857676719773,
+       "preco": 18.135833333333334,
+       "modo": "fixa"
+      },
+      {
+       "codigo": "370007",
+       "descricao": "Alho in natura triturado",
+       "unidade": "KG",
+       "qtd": 1.67,
+       "preco": 21.8,
+       "modo": "fixa"
+      },
+      {
+       "codigo": "320012",
+       "descricao": "Creme de leite",
+       "unidade": "KG",
+       "qtd": 55.2,
+       "preco": 16.371300347222224,
+       "modo": "fixa"
+      },
+      {
+       "codigo": "380142",
+       "descricao": "Extrato de levedura",
+       "unidade": "KG",
+       "qtd": 0.325,
+       "preco": 94.7860625,
+       "modo": "fixa"
+      },
+      {
+       "codigo": "380021",
+       "descricao": "Pimenta do reino branca",
+       "unidade": "KG",
+       "qtd": 0.3,
+       "preco": 98.66709999999999,
+       "modo": "fixa"
+      },
+      {
+       "codigo": "380014",
+       "descricao": "Noz moscada",
+       "unidade": "KG",
+       "qtd": 0.25,
+       "preco": 84.08583333333333,
+       "modo": "fixa"
+      },
+      {
+       "codigo": "460003",
+       "descricao": "Sorbato de potássio",
+       "unidade": "KG",
+       "qtd": 0.625,
+       "preco": 18.26096,
+       "modo": "fixa"
+      }
+     ],
+     "perdas": [
+      {
+       "nome": "Cocção/Evaporação (Kg)",
+       "valor_kg": 27.56,
+       "rateada": false
+      },
+      {
+       "nome": "Perda de processo da 1ª batida (Kg)",
+       "valor_kg": 19.32,
+       "rateada": false
+      }
+     ],
+     "rendimento": {
+      "modo": "fator",
+      "fator": 0.954
+     },
+     "media_batidas": 15
+    },
+    {
+     "id": "emb",
+     "nome": "Embalagens",
+     "tipo": "embalagem",
+     "ordem": 2,
+     "usa_percentual": false,
+     "itens": [
+      {
+       "id": "e1",
+       "codigo": "690002",
+       "descricao": "Saco plástico 50X70 0,20 pesagem",
+       "unidade": "UNID",
+       "preco": 1.372140350877193,
+       "modo": "fixa",
+       "qtd": 4
+      },
+      {
+       "id": "e2",
+       "codigo": "690035",
+       "descricao": "Bobina picotada",
+       "unidade": "UNID",
+       "preco": 0.15509444444444445,
+       "modo": "fixa",
+       "qtd": 1
+      },
+      {
+       "id": "e3",
+       "codigo": "690013",
+       "descricao": "Sacos lisos Trans 20X25 massa porção",
+       "unidade": "UNID",
+       "preco": 0.0570825,
+       "modo": "fixa",
+       "qtd": 6
+      },
+      {
+       "id": "e_etiq",
+       "codigo": "690113",
+       "descricao": "Etiqueta em Bopp Med 105X63",
+       "unidade": "UNID",
+       "preco": 0.054430000666977923,
+       "modo": "coef_linha",
+       "ref": "e_caixa",
+       "coef": 1,
+       "base": 16
+      },
+      {
+       "id": "e_filme",
+       "codigo": "10240",
+       "descricao": "Filme Solufiler Liso 430X70X1000",
+       "unidade": "KG",
+       "preco": 33.202138084632516,
+       "modo": "coef_rend",
+       "coef": 0.006416666666666667
+      },
+      {
+       "id": "e_solu",
+       "codigo": "690042",
+       "descricao": "Ribbon Solupack 55X600",
+       "unidade": "M",
+       "preco": 0.438625,
+       "modo": "coef_rend",
+       "coef": 0.058333333333333334
+      },
+      {
+       "id": "e_cera",
+       "codigo": "690009",
+       "descricao": "Ribbon cera resina 110mmX91m",
+       "unidade": "M",
+       "preco": 0.20643156843156843,
+       "modo": "coef_linha",
+       "ref": "e_etiq",
+       "coef": 0.065
+      },
+      {
+       "id": "e_strech",
+       "codigo": "690015",
+       "descricao": "Filme Strech máquina",
+       "unidade": "BOB",
+       "preco": 123.16590000000001,
+       "modo": "coef_rend",
+       "coef": 0.0009288194444444445
+      },
+      {
+       "id": "e_chapa",
+       "codigo": "690137",
+       "descricao": "Chapa de papelão",
+       "unidade": "M",
+       "preco": 2.626125,
+       "modo": "coef_linha",
+       "ref": "e_caixa",
+       "coef": 0.0375
+      },
+      {
+       "id": "e_rolo",
+       "codigo": "690118",
+       "descricao": "Rolo de fita 373 Tri 72X1000",
+       "unidade": "UNID",
+       "preco": 0.21780000000000002,
+       "modo": "coef_linha",
+       "ref": "e_caixa",
+       "coef": 1.21
+      },
+      {
+       "id": "e_caixa",
+       "codigo": "690003",
+       "descricao": "Caixa molho refrigerada",
+       "unidade": "UNID",
+       "preco": 4.693046296296296,
+       "modo": "coef_rend",
+       "coef": 0.05555555555555555
+      }
+     ]
+    }
+   ],
+   "id": "v-r10-1",
+   "n": 1,
+   "status": "production",
+   "by": "Thathyane",
+   "at": "2026-07-01T12:59:22.442Z",
+   "reason": null,
+   "model": "etapas",
+   "approval": {
+    "ficha_type": "custo",
+    "steps": [
+     {
+      "role": "pd",
+      "status": "approved",
+      "actor": "Anna Rita",
+      "comment": null,
+      "decided_at": "2026-07-01T12:59:22.457Z"
+     }
+    ]
+   },
+   "info": {
+    "doc_code": "FTC - P&D - 088",
+    "area": "P&D",
+    "revisao": "000",
+    "data_elab": "2025-10-24",
+    "data_rev": "2026-03-27",
+    "descricao_comercial": "MOLHO BRANCO CREMOSO - 1,2 KG",
+    "codigo_produto": "760425",
+    "descricao": "Molho a base de farinha de trigo, margarina, leite, alho e noz moscada.",
+    "linha": "Molho",
+    "status_prod": "Produção",
+    "armazenamento": "Refrigerado (0 a 8°C)",
+    "shelf_life": 40,
+    "bags_caixa": 15,
+    "caixas_pallet": null
+   },
+   "caldeiras": 15
+  }
+ ]
+}

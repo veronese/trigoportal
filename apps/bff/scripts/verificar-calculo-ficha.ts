@@ -20,7 +20,16 @@
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
-import { calcularFichaCusto, type EntradaCalculo, type EtapaFicha, type ItemEtapa } from '@trigo/core'
+import {
+  calcularFatorEscala,
+  calcularFichaCusto,
+  escalarEtapas,
+  quantidadeParaRendimentoLiquido,
+  rendimentoLiquidoEsperado,
+  type EntradaCalculo,
+  type EtapaFicha,
+  type ItemEtapa,
+} from '@trigo/core'
 
 const FIXTURES = path.join(__dirname, 'fixtures')
 /** Igualdade praticamente exata: tolerancia generosa deixaria passar o erro que este teste caca. */
@@ -75,9 +84,14 @@ function traduzir(): EntradaCalculo {
         lote: it.lote,
       }),
     ),
+    // A fixture guarda o formato antigo, que nao tinha unidade nem tipo de
+    // perda. `sobre_entrada` e o comportamento que o motor original praticava:
+    // a perda descontava do que foi insumido.
     perdas: (e.perdas ?? []).map((p: any) => ({
       nome: p.nome,
       valorKg: p.valor_kg ?? 0,
+      unidade: 'KG',
+      tipo: 'sobre_entrada' as const,
       rateada: Boolean(p.rateada),
     })),
     rendimento: { modo: e.rendimento?.modo ?? 'perdas', fator: e.rendimento?.fator },
@@ -148,10 +162,76 @@ if (resultado.validacoes.length > 0) {
   console.log('')
 }
 
+// ---------------------------------------------------------------------------
+// Escalonamento e calculo inverso.
+//
+// Nao existiam no prototipo, entao nao ha baseline para comparar. Aqui a
+// verificacao e por PROPRIEDADE MATEMATICA: escalar e depois medir tem que
+// devolver exatamente o alvo, e o inverso tem que voltar ao ponto de partida.
+// ---------------------------------------------------------------------------
+
+console.log('')
+console.log('  Escalonamento e calculo inverso:')
+
+const entradaBase = traduzir()
+
+// A ficha de referencia tem TODOS os itens de receita em `fixa`. Escalar sem
+// converter para `proporcional` nao muda nada — e o teste prova isso de
+// proposito, porque e exatamente a armadilha que o importador de fichas antigas
+// vai encontrar.
+const semConverter = escalarEtapas(entradaBase.etapas, 0.5)
+conferir('escala sem converter', semConverter.escalados, 0)
+
+const proporcionais: EtapaFicha[] = entradaBase.etapas.map((etapa) =>
+  etapa.tipo === 'embalagem'
+    ? etapa
+    : { ...etapa, itens: etapa.itens.map((i): ItemEtapa => ({ ...i, modo: 'proporcional' })) },
+)
+
+const fator = calcularFatorEscala(resultado.rendimentoFinal, 5)
+const escalado = escalarEtapas(proporcionais, fator)
+const emCincoKg = calcularFichaCusto({ ...entradaBase, etapas: escalado.etapas })
+
+conferir('itens escalados', escalado.escalados, 12)
+conferir('rendimento em 5 kg', emCincoKg.rendimentoFinal, 5)
+
+// O custo POR QUILO da receita nao muda com a escala: e a propriedade que prova
+// que o redimensionamento foi proporcional de verdade. O custo/kg FINAL muda,
+// porque as embalagens nao escalam junto — e isso e correto: caixa nao vira
+// meia caixa.
+conferir('custo/kg da receita', emCincoKg.etapas[0]!.custoKg, resultado.etapas[0]!.custoKg)
+
+const necessario = quantidadeParaRendimentoLiquido(100, 0.05)
+conferir('inverso 100 kg / 5%', necessario, 105.26315789473684)
+conferir('volta ao liquido', rendimentoLiquidoEsperado(necessario, 0.05), 100)
+
+// A conta errada fica registrada no proprio teste, para ninguem "simplificar"
+// depois.
+const errado = 100 * 1.05
+console.log(
+  `  nota   multiplicar por 1,05 daria ${errado.toFixed(5)} kg e entregaria ` +
+    `${rendimentoLiquidoEsperado(errado, 0.05).toFixed(5)} kg, nao 100.`,
+)
+
+for (const [nome, fn] of [
+  ['perda de 100%', () => quantidadeParaRendimentoLiquido(100, 1)],
+  ['rendimento base zero', () => calcularFatorEscala(0, 5)],
+] as const) {
+  let lancou = false
+  try {
+    fn()
+  } catch {
+    lancou = true
+  }
+  if (!lancou) falhas++
+  console.log(`  ${lancou ? 'ok   ' : 'FALHA'} recusa ${nome}`)
+}
+
+console.log('')
 console.log(
   falhas === 0
-    ? '  Motor portado e motor original produzem numeros identicos.'
-    : `  ${falhas} divergencia(s): o port alterou o calculo.`,
+    ? '  Motor identico ao original, e o escalonamento fecha.'
+    : `  ${falhas} divergencia(s): o calculo mudou.`,
 )
 
 if (falhas > 0) process.exitCode = 1

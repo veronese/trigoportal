@@ -106,9 +106,13 @@ function resolverQuantidade(
     return { qtd: num(item.base) * num(lotes), preco: num(item.preco) }
   }
 
-  // `fixa` e qualquer modo que nao se aplique a etapa em kg usam a quantidade
-  // literal. Os modos coef_* pertencem a embalagem e cairiam aqui por engano —
-  // a validacao no fim avisa quando isso acontece.
+  // `fixa` e `proporcional` usam a quantidade literal. A diferenca entre os
+  // dois NAO e do motor: e de escala.ts, que multiplica so os proporcionais
+  // antes de chegar aqui. Separar assim mantem o motor puro em relacao ao
+  // redimensionamento — ele calcula o que recebe, sem opinar sobre escala.
+  //
+  // Os modos coef_* pertencem a embalagem e cairiam aqui por engano; a
+  // validacao no fim avisa quando isso acontece.
   return { qtd: num(item.qtd), preco: num(item.preco) }
 }
 
@@ -141,7 +145,7 @@ function calcularEmbalagem(
         const referencia = item.ref ? resolvido[item.ref] : undefined
         qtd = referencia != null ? num(item.base) + num(item.coef) * referencia : null
       } else {
-        // `fixa` e o resto: quantidade literal.
+        // `fixa`, `proporcional` e o resto: quantidade literal.
         qtd = num(item.qtd)
       }
 

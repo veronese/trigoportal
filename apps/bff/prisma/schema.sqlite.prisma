@@ -313,36 +313,36 @@ model Supplier {
 }
 
 // ============================================================================
-// FICHAS TECNICAS
+// FICHAS TECNICAS DE P&D
 // ============================================================================
 //
-// DECISAO CENTRAL — versao e COPIA, nao referencia.
+// HIERARQUIA:  Ficha -> Fase -> Versao -> Etapa -> Item
 //
-// O escopo exige que uma versao salva nunca mude: "se um custo de insumo for
-// atualizado, a ficha atual recalcula, mas as versoes salvas mantem os valores
-// da epoca". Duas formas de conseguir isso:
+// FASE E ENTIDADE PROPRIA, e nao atributo da versao. O motivo e o vinculo de
+// origem: a promocao NAO transforma nem apaga a fase anterior, ela cria uma
+// fase nova apontando para a versao que a originou. Com fase como coluna, esse
+// vinculo nao teria onde morar, e a pergunta "qual Batida Teste originou esta
+// FT Producao?" ficaria sem resposta.
 //
-//   a) guardar a versao como um JSON congelado;
-//   b) guardar linhas normalizadas e COPIAR o preco para dentro do item.
+// CUSTO E PROCESSO SAO FACES DA MESMA VERSAO, e nao versoes irmas. No
+// prototipo o usuario alterna entre as duas com um botao dentro do mesmo
+// produto — sao dois documentos sobre a MESMA formulacao daquele momento.
+// Por isso FichaProcesso e 1-para-1 com FichaVersao.
 //
-// Escolhida a (b). O motivo e a busca: o escopo pede pesquisar ficha por
-// INSUMO, e insumo dentro de JSON exige OPENJSON no SQL Server — consulta que
-// nao aproveita indice e que ninguem entende seis meses depois. Com linha
-// normalizada, e um join.
+// VERSAO E COPIA, NAO REFERENCIA. O escopo exige que versao salva nunca mude
+// quando o custo de um insumo for atualizado. Por isso o preco vive no item da
+// etapa, com a data em que foi lido. Gerar versao COPIA as linhas.
 //
-// O preco vive no item da etapa, nao no insumo, justamente para a versao antiga
-// nao se mexer quando o custo do insumo mudar. Criar versao nova copia as
-// linhas; a versao anterior fica intacta por construcao.
-//
-// ESTA ONDA cobre a Ficha de CUSTO. Ficha de Processo, kits e comparacao de
-// versoes entram na proxima, em tabelas proprias.
+// Normalizado em vez de JSON congelado porque o escopo pede busca de ficha por
+// INSUMO, e insumo dentro de JSON exigiria OPENJSON no SQL Server — consulta
+// que nao aproveita indice.
 
-/// Marca ou loja. Primeiro nivel das pastas de fichas.
+/// Marca ou loja. Primeiro nivel das pastas.
 model FichaRestaurante {
   id   String @id @default(uuid())
   nome String
 
-  /// Cor do cabecalho do PDF, para identificar a marca no documento (#RRGGBB).
+  /// Cor do cabecalho do PDF, para identificar a marca no documento.
   cor String @default("#2f3237")
 
   ativo  Boolean @default(true)
@@ -355,7 +355,7 @@ model FichaRestaurante {
   @@map("tp_ficha_restaurantes")
 }
 
-/// Linha de produto (Molhos, Massas, Paes especiais). Segundo nivel das pastas.
+/// Linha de produto (Molhos, Massas). Segundo nivel das pastas.
 model FichaLinha {
   id   String @id @default(uuid())
   nome String
@@ -370,30 +370,54 @@ model FichaLinha {
   @@map("tp_ficha_linhas")
 }
 
-/// Insumo usado nas fichas: materia-prima ou embalagem.
+/// Linha industrial e sua capacidade por batida.
+model LinhaProducao {
+  id           String  @id @default(uuid())
+  nome         String
+  /// Sugerida como quantidade final ao promover para FT Producao.
+  capacidadeKg Decimal @map("capacidade_kg")
+  ativa        Boolean @default(true)
+
+  fases FichaFase[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([nome])
+  @@map("tp_linhas_producao")
+}
+
+/// Insumo de ficha: materia-prima ou embalagem.
 model FichaInsumo {
   id        String @id @default(uuid())
   codigo    String
   descricao String
 
-  /// Insumo de receita e sempre KG. Embalagem tem unidade livre (M, UNID, BOB).
+  /// Insumo de receita e sempre KG. Embalagem tem unidade livre.
   unidade String @default("KG")
 
   /// materia | embalagem
   categoria String @default("materia")
 
-  /// Custo unitario ATUAL, vindo do Protheus. O item da etapa guarda a propria
-  /// copia: este campo e o valor de hoje, aquele e o da epoca da versao.
-  custoReferencia Decimal? @map("custo_referencia")
+  /// Custo unitario ATUAL. O item da etapa guarda a copia da epoca.
+  custoReferencia Decimal?  @map("custo_referencia")
+  custoData       DateTime? @map("custo_data")
 
-  /// Codigo oficial no Protheus. Nulo enquanto o insumo e provisorio.
+  /// Codigo no Protheus. Nulo enquanto provisorio.
   codigoProtheus String? @map("codigo_protheus")
 
-  /// oficial | provisorio — provisorio gera pendencia de relacionamento, e o
-  /// escopo exige que a ficha funcione mesmo sem o Protheus disponivel.
+  /// oficial | provisorio
   statusIntegracao String @default("provisorio") @map("status_integracao")
 
-  atualizadoEm DateTime? @map("atualizado_em")
+  // Um provisorio, ao ser vinculado, guarda quem e quando. Snapshots antigos
+  // NAO sao alterados: eles ja copiaram codigo e descricao.
+  vinculadoPor String?   @map("vinculado_por")
+  vinculadoEm  DateTime? @map("vinculado_em")
+
+  // Campos so do provisorio, para o P&D nao travar esperando cadastro no ERP.
+  fornecedor String?
+  marca      String?
+  observacao String?
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -404,7 +428,7 @@ model FichaInsumo {
   @@map("tp_ficha_insumos")
 }
 
-/// O produto. As pastas saem daqui: restaurante + linha definem onde ele aparece.
+/// O produto em desenvolvimento. As pastas saem de restaurante + linha.
 model Ficha {
   id     String @id @default(uuid())
   codigo String
@@ -417,11 +441,8 @@ model Ficha {
 
   categoria String?
 
-  /// Ficha em teste nao afeta a base oficial e nao vai para o Protheus.
-  emTeste Boolean @default(false) @map("em_teste")
-
-  versoes   FichaVersao[]
-  historico FichaHistorico[]
+  fases     FichaFase[]
+  auditoria FichaAuditoria[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -432,32 +453,69 @@ model Ficha {
   @@map("tp_fichas")
 }
 
-/// Uma versao completa da ficha. Imutavel depois de sair de rascunho.
-model FichaVersao {
+/// Uma das tres fases do desenvolvimento, com vinculo para a que a originou.
+model FichaFase {
   id      String @id @default(uuid())
   fichaId String @map("ficha_id")
   ficha   Ficha  @relation(fields: [fichaId], references: [id], onDelete: Cascade)
 
-  /// custo | processo — o mesmo produto tem as duas, cada uma com suas versoes.
-  tipo String
+  /// bancada | batida_teste | ft_producao
+  fase String
 
-  numero Int
+  /// A VERSAO que originou esta fase. Nula so na bancada, que e o inicio.
+  /// Responde "qual Batida Teste originou esta FT Producao?".
+  origemVersaoId String?      @map("origem_versao_id")
+  origemVersao   FichaVersao? @relation("PromocaoDeFase", fields: [origemVersaoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  /// Escala desta fase, em kg. Bancada 5, batida teste 80, producao 590.
+  quantidadeAlvoKg Decimal? @map("quantidade_alvo_kg")
+
+  /// Linha usada, quando a fase e industrial. Registrada no snapshot.
+  linhaProducaoId String?        @map("linha_producao_id")
+  linhaProducao   LinhaProducao? @relation(fields: [linhaProducaoId], references: [id])
+
+  versoes FichaVersao[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([fichaId, fase])
+  @@index([origemVersaoId])
+  @@map("tp_ficha_fases")
+}
+
+/// Snapshot completo e imutavel depois de sair de rascunho.
+model FichaVersao {
+  id     String    @id @default(uuid())
+  faseId String    @map("fase_id")
+  fase   FichaFase @relation(fields: [faseId], references: [id], onDelete: Cascade)
+
+  // AS TRES NUMERACOES, que nunca se equivalem automaticamente. Provado pela
+  // ficha de referencia: custo FTC-P&D-088 rev 000, processo FTP-PRD-245 rev 3.
+  /// Contador interno do P&D, incrementado a cada GERAR VERSAO.
+  versaoFormula     Int     @map("versao_formula")
+  /// Numeracao do documento, no formato da area.
+  revisaoDocumental String? @map("revisao_documental")
+  /// O que o Protheus devolveu. Nunca inventado.
+  revisaoProtheus   String? @map("revisao_protheus")
+
   /// Nome livre dado pelo usuario ("Mix Fornecedor A/B").
   nome   String?
-  /// Por que esta versao foi criada.
   motivo String?
 
   /// rascunho | em_aprovacao | vigente | obsoleta
   status String @default("rascunho")
 
-  /// Peso da unidade acabada, em kg. Base do custo por unidade.
+  /// Quantidade final desta versao e o fator aplicado a partir da origem.
+  quantidadeFinalKg Decimal? @map("quantidade_final_kg")
+  fatorEscala       Decimal? @map("fator_escala")
+
   pesoUnitario Decimal? @map("peso_unitario")
   precoVenda   Decimal? @map("preco_venda")
 
-  // KPIs CONGELADOS quando a versao sai de rascunho. Guardados e nao
-  // recalculados de proposito: o custo de um insumo muda depois, e a versao
-  // antiga tem que continuar respondendo o mesmo numero. Em rascunho ficam
-  // nulos, porque ali o valor e recalculado a cada leitura.
+  // KPIs CONGELADOS ao sair de rascunho. Guardados e nao recalculados: o custo
+  // de um insumo muda depois, e a versao antiga tem que responder o mesmo
+  // numero. Em rascunho ficam nulos, porque ali recalcula a cada leitura.
   custoBatida  Decimal? @map("custo_batida")
   rendimentoKg Decimal? @map("rendimento_kg")
   custoKg      Decimal? @map("custo_kg")
@@ -466,37 +524,53 @@ model FichaVersao {
   criadoPor   String    @map("criado_por")
   congeladoEm DateTime? @map("congelado_em")
 
-  etapas     FichaEtapa[]
-  aprovacoes FichaAprovacao[]
-  historico  FichaHistorico[]
+  // Dados industriais do cabecalho, congelados junto.
+  codigoDocumento    String?   @map("codigo_documento")
+  area               String?
+  descricaoComercial String?   @map("descricao_comercial")
+  descricaoTecnica   String?   @map("descricao_tecnica")
+  armazenamento      String?
+  shelfLifeDias      Int?      @map("shelf_life_dias")
+  bagsPorCaixa       Int?      @map("bags_por_caixa")
+  caixasPorPallet    Int?      @map("caixas_por_pallet")
+  numeroCaldeiras    Int?      @map("numero_caldeiras")
+  dataElaboracao     DateTime? @map("data_elaboracao")
+  dataRevisao        DateTime? @map("data_revisao")
+
+  etapas      FichaEtapa[]
+  aprovacoes  FichaAprovacao[]
+  auditoria   FichaAuditoria[]
+  integracoes FichaIntegracao[]
+  alteracoes  FichaAlteracaoDocumental[]
+  processo    FichaProcesso?
+  /// Fases originadas por esta versao.
+  promoveu    FichaFase[]                @relation("PromocaoDeFase")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  @@unique([fichaId, tipo, numero])
+  @@unique([faseId, versaoFormula])
   @@index([status])
   @@map("tp_ficha_versoes")
 }
 
-/// Etapa da composicao: Massa, Molho, Montagem, Embalagem.
+/// Etapa da composicao.
 model FichaEtapa {
   id       String      @id @default(uuid())
   versaoId String      @map("versao_id")
   versao   FichaVersao @relation(fields: [versaoId], references: [id], onDelete: Cascade)
 
   nome  String
-  /// receita | subreceita | montagem | processo | embalagem
+  /// receita | subreceita | pre_mistura | kit | processo | montagem | embalagem
   tipo  String
   ordem Int
 
-  /// Quando true, a soma dos percentuais dos itens e comparada com 100%.
   usaPercentual Boolean @default(true) @map("usa_percentual")
 
-  /// Divisor das perdas rateadas: perda de fundo de caldeira acontece uma vez
-  /// por producao, nao a cada batida.
+  /// Divisor das perdas rateadas.
   mediaBatidas Int @default(1) @map("media_batidas")
 
-  /// fator | perdas — os dois caminhos NAO dao o mesmo numero, e a ficha escolhe.
+  /// fator | perdas — os dois caminhos NAO dao o mesmo numero.
   rendimentoModo  String   @default("perdas") @map("rendimento_modo")
   rendimentoFator Decimal? @map("rendimento_fator")
 
@@ -507,7 +581,7 @@ model FichaEtapa {
   @@map("tp_ficha_etapas")
 }
 
-/// Item de uma etapa: insumo, subreceita ou embalagem.
+/// Item de uma etapa.
 model FichaItem {
   id      String     @id @default(uuid())
   etapaId String     @map("etapa_id")
@@ -515,18 +589,20 @@ model FichaItem {
 
   ordem Int
 
-  // Codigo e descricao COPIADOS, nao referenciados: a versao historica tem que
-  // continuar legivel mesmo que o insumo seja renomeado ou saia do cadastro.
+  // COPIADOS, nao referenciados: a versao historica tem que continuar legivel
+  // mesmo que o insumo seja renomeado ou saia do cadastro.
   codigo    String
   descricao String
   unidade   String
 
-  /// fixa | multiplo_lote | saida_etapa | coef_rend | coef_linha
+  /// fixa | proporcional | multiplo_lote | saida_etapa | coef_rend | coef_linha
   modo String @default("fixa")
 
-  qtd   Decimal?
-  /// Custo unitario DA EPOCA. E o que torna a versao imutavel de fato.
-  preco Decimal  @default(0)
+  qtd Decimal?
+
+  /// Custo unitario DA EPOCA, com a data em que foi lido. O escopo exige as duas.
+  preco     Decimal   @default(0)
+  precoData DateTime? @map("preco_data")
 
   base Decimal?
   coef Decimal?
@@ -535,8 +611,10 @@ model FichaItem {
   /// saida_etapa: id da etapa. coef_linha: id do item de referencia.
   ref String?
 
-  /// Ligacao com o cadastro, para busca por insumo. Nula em item avulso.
-  insumoId String? @map("insumo_id")
+  /// Ligacao com o cadastro, para busca por insumo.
+  insumoId   String? @map("insumo_id")
+  /// Era provisorio quando esta versao foi congelada.
+  provisorio Boolean @default(false)
 
   @@index([etapaId, ordem])
   @@index([insumoId])
@@ -544,7 +622,7 @@ model FichaItem {
   @@map("tp_ficha_itens")
 }
 
-/// Perda declarada na etapa (evaporacao, fundo de caldeira).
+/// Perda declarada na etapa.
 model FichaPerda {
   id      String     @id @default(uuid())
   etapaId String     @map("etapa_id")
@@ -552,14 +630,93 @@ model FichaPerda {
 
   nome    String
   valorKg Decimal @map("valor_kg")
+  unidade String  @default("KG")
 
-  /// Perda de uma batida so, diluida na media de batidas da etapa.
-  rateada Boolean @default(false)
+  /// Alternativa ao valor absoluto. Fracao: 0,05 e 5%.
+  percentual Decimal?
+
+  /// sobre_entrada | sobre_saida — muda a conta de recomposicao do rendimento.
+  tipo String @default("sobre_entrada")
+
+  /// Perda por producao, diluida na media de batidas.
+  rateada    Boolean @default(false)
+  observacao String?
 
   ordem Int @default(0)
 
   @@index([etapaId])
   @@map("tp_ficha_perdas")
+}
+
+/// Ficha de Processo: a MESMA versao, outra face. Por isso 1-para-1.
+model FichaProcesso {
+  id       String      @id @default(uuid())
+  versaoId String      @unique @map("versao_id")
+  versao   FichaVersao @relation(fields: [versaoId], references: [id], onDelete: Cascade)
+
+  /// Documento proprio, com numeracao propria: FTP-PRD-245 rev 3.
+  codigoDocumento String? @map("codigo_documento")
+  revisao         String?
+
+  conservacao          String?
+  rendimentoIndustrial String? @map("rendimento_industrial")
+
+  // Padroes sensoriais. Inline por serem cinco campos de texto de uma ficha so.
+  sensorialCor     String? @map("sensorial_cor")
+  sensorialSabor   String? @map("sensorial_sabor")
+  sensorialAroma   String? @map("sensorial_aroma")
+  sensorialTextura String? @map("sensorial_textura")
+  sensorialAspecto String? @map("sensorial_aspecto")
+
+  /// Imagem do padrao sensorial, que sai no PDF.
+  imagemUrl String? @map("imagem_url")
+
+  passos       FichaProcessoPasso[]
+  ingredientes FichaIngredienteOperacional[]
+
+  @@map("tp_ficha_processos")
+}
+
+/// Um passo do modo de preparo, com os parametros que hoje vivem em prosa.
+model FichaProcessoPasso {
+  id         String        @id @default(uuid())
+  processoId String        @map("processo_id")
+  processo   FichaProcesso @relation(fields: [processoId], references: [id], onDelete: Cascade)
+
+  ordem     Int
+  descricao String
+
+  // Extraidos do texto: "velocidade 2, por 5 minutos", "consistencia a quente
+  // (170 a 180)". Opcionais porque nem todo passo tem todos.
+  equipamento   String?
+  velocidade    String?
+  tempoMinutos  Decimal? @map("tempo_minutos")
+  temperatura   String?
+  pontoControle String?  @map("ponto_controle")
+  observacao    String?
+
+  @@unique([processoId, ordem])
+  @@map("tp_ficha_processo_passos")
+}
+
+/// Ingrediente como a fabrica o enxerga. NAO substitui a quantidade da BOM.
+model FichaIngredienteOperacional {
+  id         String        @id @default(uuid())
+  processoId String        @map("processo_id")
+  processo   FichaProcesso @relation(fields: [processoId], references: [id], onDelete: Cascade)
+
+  ordem Int
+  nome  String
+
+  /// Pode ser NULA: na ficha de referencia o creme de leite varia por
+  /// fornecedor e so a orientacao operacional existe.
+  quantidadeKg Decimal? @map("quantidade_kg")
+
+  /// "4 pacotes", "1 saco", "Terra Viva 7,200 / Quata 5,200 — 1 balde".
+  orientacao String
+
+  @@unique([processoId, ordem])
+  @@map("tp_ficha_ingredientes_operacionais")
 }
 
 /// Assinatura de uma area sobre uma versao.
@@ -568,49 +725,91 @@ model FichaAprovacao {
   versaoId String      @map("versao_id")
   versao   FichaVersao @relation(fields: [versaoId], references: [id], onDelete: Cascade)
 
-  /// pd | qualidade | fabrica | producao — AREA, nao pessoa: o escopo define os
-  /// aprovadores por cargo, e pessoa sai da empresa sem travar a ficha.
-  area String
-
-  /// Posicao na sequencia. Custo tem so P&D; processo tem as quatro em ordem.
+  /// pd | qualidade | fabrica | producao — AREA, nao pessoa.
+  area  String
   ordem Int
 
-  /// pendente | aprovado | ajuste_solicitado
+  /// pendente | aprovado | reprovado
   status String @default("pendente")
 
-  decididoPor   String?   @map("decidido_por")
-  decididoEm    DateTime? @map("decidido_em")
-  /// Obrigatoria quando o status e ajuste_solicitado.
-  justificativa String?
+  decididoPor String?   @map("decidido_por")
+  decididoEm  DateTime? @map("decidido_em")
+  /// Obrigatorio quando reprovado.
+  comentario  String?
+
+  /// Identificador da aprovacao: a evidencia, nao a imagem da assinatura.
+  identificador String?
 
   @@unique([versaoId, area])
   @@index([status])
   @@map("tp_ficha_aprovacoes")
 }
 
-/// Historico: responde "o que mudou", e nao se perde na troca de versao.
-model FichaHistorico {
+/// Historico documental, que sai impresso na Ficha de Processo.
+model FichaAlteracaoDocumental {
+  id       String      @id @default(uuid())
+  versaoId String      @map("versao_id")
+  versao   FichaVersao @relation(fields: [versaoId], references: [id], onDelete: Cascade)
+
+  revisao     String
+  data        DateTime
+  alteracao   String
+  responsavel String
+
+  @@index([versaoId])
+  @@map("tp_ficha_alteracoes_documentais")
+}
+
+/// Auditoria tecnica automatica, separada do historico documental.
+model FichaAuditoria {
   id      String @id @default(uuid())
   fichaId String @map("ficha_id")
   ficha   Ficha  @relation(fields: [fichaId], references: [id], onDelete: Cascade)
 
-  /// Nula quando o evento e da ficha e nao de uma versao (ex: criacao).
-  ///
-  /// SEM CASCATA de proposito. O historico alcanca Ficha por dois caminhos —
-  /// direto e via FichaVersao — e o SQL Server recusa dois caminhos de cascata
-  /// para a mesma tabela. Quebrar aqui e o certo: excluir a ficha ja limpa o
-  /// historico pelo fichaId, e versao aprovada nao se exclui.
+  /// SEM CASCATA: a auditoria alcanca Ficha por dois caminhos e o SQL Server
+  /// recusa. Excluir a ficha ja limpa pelo fichaId.
   versaoId String?      @map("versao_id")
   versao   FichaVersao? @relation(fields: [versaoId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  /// criou | editou | enviou_aprovacao | aprovou | solicitou_ajuste | nova_versao
-  acao String
+  /// criou | editou | gerou_versao | promoveu | aprovou | reprovou | integrou |
+  /// erro_protheus | vinculou_produto | cancelou | publicou
+  evento String
 
-  autor   String
-  detalhe String?
+  /// O que mudou, quando aplicavel.
+  campo         String?
+  valorAnterior String? @map("valor_anterior")
+  valorNovo     String? @map("valor_novo")
+
+  autor  String
+  motivo String?
 
   createdAt DateTime @default(now()) @map("created_at")
 
   @@index([fichaId, createdAt])
-  @@map("tp_ficha_historico")
+  @@index([evento])
+  @@map("tp_ficha_auditoria")
+}
+
+/// Tentativa de integracao com o Protheus. Falha NAO gera versao nova.
+model FichaIntegracao {
+  id       String      @id @default(uuid())
+  versaoId String      @map("versao_id")
+  versao   FichaVersao @relation(fields: [versaoId], references: [id], onDelete: Cascade)
+
+  /// nao_integrado | pendente | integrando | integrado | erro
+  status String @default("pendente")
+
+  codigoProduto   String? @map("codigo_produto")
+  /// Revisao devolvida pelo ERP. Nunca inventada pelo portal.
+  revisaoProtheus String? @map("revisao_protheus")
+
+  mensagem  String?
+  tentativa Int     @default(1)
+
+  autor     String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([versaoId, createdAt])
+  @@index([status])
+  @@map("tp_ficha_integracoes")
 }

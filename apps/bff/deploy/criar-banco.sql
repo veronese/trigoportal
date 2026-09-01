@@ -29,7 +29,7 @@
 --      SECRET e CREDENTIAL nao poderao ser gravados.
 --
 -- Idempotente: pode rodar novamente sem duplicar objeto nem parametro.
--- Assinatura do conteudo: 61d63e03ebe1bf50
+-- Assinatura do conteudo: eb30e5c6ccab5cc8
 -- ============================================================================
 
 SET XACT_ABORT ON;
@@ -201,6 +201,18 @@ BEGIN
   );
 
   -- CreateTable
+  CREATE TABLE [dbo].[tp_linhas_producao] (
+      [id] NVARCHAR(36) NOT NULL,
+      [nome] NVARCHAR(80) NOT NULL,
+      [capacidade_kg] DECIMAL(18,6) NOT NULL,
+      [ativa] BIT NOT NULL CONSTRAINT [tp_linhas_producao_ativa_df] DEFAULT 1,
+      [created_at] DATETIME2 NOT NULL CONSTRAINT [tp_linhas_producao_created_at_df] DEFAULT CURRENT_TIMESTAMP,
+      [updated_at] DATETIME2 NOT NULL,
+      CONSTRAINT [tp_linhas_producao_pk] PRIMARY KEY CLUSTERED ([id]),
+      CONSTRAINT [tp_linhas_producao_nome_uq] UNIQUE NONCLUSTERED ([nome])
+  );
+
+  -- CreateTable
   CREATE TABLE [dbo].[tp_ficha_insumos] (
       [id] NVARCHAR(36) NOT NULL,
       [codigo] NVARCHAR(30) NOT NULL,
@@ -208,9 +220,14 @@ BEGIN
       [unidade] NVARCHAR(10) NOT NULL CONSTRAINT [tp_ficha_insumos_unidade_df] DEFAULT 'KG',
       [categoria] NVARCHAR(20) NOT NULL CONSTRAINT [tp_ficha_insumos_categoria_df] DEFAULT 'materia',
       [custo_referencia] DECIMAL(18,6),
+      [custo_data] DATETIME2,
       [codigo_protheus] NVARCHAR(30),
       [status_integracao] NVARCHAR(20) NOT NULL CONSTRAINT [tp_ficha_insumos_status_integracao_df] DEFAULT 'provisorio',
-      [atualizado_em] DATETIME2,
+      [vinculado_por] NVARCHAR(320),
+      [vinculado_em] DATETIME2,
+      [fornecedor] NVARCHAR(200),
+      [marca] NVARCHAR(120),
+      [observacao] NVARCHAR(500),
       [created_at] DATETIME2 NOT NULL CONSTRAINT [tp_ficha_insumos_created_at_df] DEFAULT CURRENT_TIMESTAMP,
       [updated_at] DATETIME2 NOT NULL,
       CONSTRAINT [tp_ficha_insumos_pk] PRIMARY KEY CLUSTERED ([id]),
@@ -225,7 +242,6 @@ BEGIN
       [restaurante_id] NVARCHAR(36) NOT NULL,
       [linha_id] NVARCHAR(36) NOT NULL,
       [categoria] NVARCHAR(80),
-      [em_teste] BIT NOT NULL CONSTRAINT [tp_fichas_em_teste_df] DEFAULT 0,
       [created_at] DATETIME2 NOT NULL CONSTRAINT [tp_fichas_created_at_df] DEFAULT CURRENT_TIMESTAMP,
       [updated_at] DATETIME2 NOT NULL,
       CONSTRAINT [tp_fichas_pk] PRIMARY KEY CLUSTERED ([id]),
@@ -233,14 +249,31 @@ BEGIN
   );
 
   -- CreateTable
-  CREATE TABLE [dbo].[tp_ficha_versoes] (
+  CREATE TABLE [dbo].[tp_ficha_fases] (
       [id] NVARCHAR(36) NOT NULL,
       [ficha_id] NVARCHAR(36) NOT NULL,
-      [tipo] NVARCHAR(20) NOT NULL,
-      [numero] INT NOT NULL,
+      [fase] NVARCHAR(20) NOT NULL,
+      [origem_versao_id] NVARCHAR(36),
+      [quantidade_alvo_kg] DECIMAL(18,6),
+      [linha_producao_id] NVARCHAR(36),
+      [created_at] DATETIME2 NOT NULL CONSTRAINT [tp_ficha_fases_created_at_df] DEFAULT CURRENT_TIMESTAMP,
+      [updated_at] DATETIME2 NOT NULL,
+      CONSTRAINT [tp_ficha_fases_pk] PRIMARY KEY CLUSTERED ([id]),
+      CONSTRAINT [tp_ficha_fases_ficha_fase_uq] UNIQUE NONCLUSTERED ([ficha_id],[fase])
+  );
+
+  -- CreateTable
+  CREATE TABLE [dbo].[tp_ficha_versoes] (
+      [id] NVARCHAR(36) NOT NULL,
+      [fase_id] NVARCHAR(36) NOT NULL,
+      [versao_formula] INT NOT NULL,
+      [revisao_documental] NVARCHAR(20),
+      [revisao_protheus] NVARCHAR(20),
       [nome] NVARCHAR(120),
       [motivo] NVARCHAR(500),
       [status] NVARCHAR(20) NOT NULL CONSTRAINT [tp_ficha_versoes_status_df] DEFAULT 'rascunho',
+      [quantidade_final_kg] DECIMAL(18,6),
+      [fator_escala] DECIMAL(18,9),
       [peso_unitario] DECIMAL(18,6),
       [preco_venda] DECIMAL(18,6),
       [custo_batida] DECIMAL(18,6),
@@ -249,10 +282,21 @@ BEGIN
       [custo_unidade] DECIMAL(18,6),
       [criado_por] NVARCHAR(320) NOT NULL,
       [congelado_em] DATETIME2,
+      [codigo_documento] NVARCHAR(40),
+      [area] NVARCHAR(40),
+      [descricao_comercial] NVARCHAR(200),
+      [descricao_tecnica] NVARCHAR(500),
+      [armazenamento] NVARCHAR(120),
+      [shelf_life_dias] INT,
+      [bags_por_caixa] INT,
+      [caixas_por_pallet] INT,
+      [numero_caldeiras] INT,
+      [data_elaboracao] DATETIME2,
+      [data_revisao] DATETIME2,
       [created_at] DATETIME2 NOT NULL CONSTRAINT [tp_ficha_versoes_created_at_df] DEFAULT CURRENT_TIMESTAMP,
       [updated_at] DATETIME2 NOT NULL,
       CONSTRAINT [tp_ficha_versoes_pk] PRIMARY KEY CLUSTERED ([id]),
-      CONSTRAINT [tp_ficha_versoes_ficha_tipo_numero_uq] UNIQUE NONCLUSTERED ([ficha_id],[tipo],[numero])
+      CONSTRAINT [tp_ficha_versoes_fase_versao_uq] UNIQUE NONCLUSTERED ([fase_id],[versao_formula])
   );
 
   -- CreateTable
@@ -281,11 +325,13 @@ BEGIN
       [modo] NVARCHAR(20) NOT NULL CONSTRAINT [tp_ficha_itens_modo_df] DEFAULT 'fixa',
       [qtd] DECIMAL(18,6),
       [preco] DECIMAL(18,6) NOT NULL CONSTRAINT [tp_ficha_itens_preco_df] DEFAULT 0,
+      [preco_data] DATETIME2,
       [base] DECIMAL(18,6),
       [coef] DECIMAL(18,6),
       [lote] INT,
       [ref] NVARCHAR(36),
       [insumo_id] NVARCHAR(36),
+      [provisorio] BIT NOT NULL CONSTRAINT [tp_ficha_itens_provisorio_df] DEFAULT 0,
       CONSTRAINT [tp_ficha_itens_pk] PRIMARY KEY CLUSTERED ([id])
   );
 
@@ -295,9 +341,59 @@ BEGIN
       [etapa_id] NVARCHAR(36) NOT NULL,
       [nome] NVARCHAR(120) NOT NULL,
       [valor_kg] DECIMAL(18,6) NOT NULL,
+      [unidade] NVARCHAR(10) NOT NULL CONSTRAINT [tp_ficha_perdas_unidade_df] DEFAULT 'KG',
+      [percentual] DECIMAL(18,6),
+      [tipo] NVARCHAR(20) NOT NULL CONSTRAINT [tp_ficha_perdas_tipo_df] DEFAULT 'sobre_entrada',
       [rateada] BIT NOT NULL CONSTRAINT [tp_ficha_perdas_rateada_df] DEFAULT 0,
+      [observacao] NVARCHAR(500),
       [ordem] INT NOT NULL CONSTRAINT [tp_ficha_perdas_ordem_df] DEFAULT 0,
       CONSTRAINT [tp_ficha_perdas_pk] PRIMARY KEY CLUSTERED ([id])
+  );
+
+  -- CreateTable
+  CREATE TABLE [dbo].[tp_ficha_processos] (
+      [id] NVARCHAR(36) NOT NULL,
+      [versao_id] NVARCHAR(36) NOT NULL,
+      [codigo_documento] NVARCHAR(40),
+      [revisao] NVARCHAR(20),
+      [conservacao] NVARCHAR(200),
+      [rendimento_industrial] NVARCHAR(200),
+      [sensorial_cor] NVARCHAR(500),
+      [sensorial_sabor] NVARCHAR(500),
+      [sensorial_aroma] NVARCHAR(500),
+      [sensorial_textura] NVARCHAR(500),
+      [sensorial_aspecto] NVARCHAR(500),
+      [imagem_url] NVARCHAR(500),
+      CONSTRAINT [tp_ficha_processos_pk] PRIMARY KEY CLUSTERED ([id]),
+      CONSTRAINT [tp_ficha_processos_versao_uq] UNIQUE NONCLUSTERED ([versao_id])
+  );
+
+  -- CreateTable
+  CREATE TABLE [dbo].[tp_ficha_processo_passos] (
+      [id] NVARCHAR(36) NOT NULL,
+      [processo_id] NVARCHAR(36) NOT NULL,
+      [ordem] INT NOT NULL,
+      [descricao] NVARCHAR(1000) NOT NULL,
+      [equipamento] NVARCHAR(120),
+      [velocidade] NVARCHAR(60),
+      [tempo_minutos] DECIMAL(18,2),
+      [temperatura] NVARCHAR(60),
+      [ponto_controle] NVARCHAR(500),
+      [observacao] NVARCHAR(500),
+      CONSTRAINT [tp_ficha_processo_passos_pk] PRIMARY KEY CLUSTERED ([id]),
+      CONSTRAINT [tp_ficha_processo_passos_ordem_uq] UNIQUE NONCLUSTERED ([processo_id],[ordem])
+  );
+
+  -- CreateTable
+  CREATE TABLE [dbo].[tp_ficha_ingredientes_operacionais] (
+      [id] NVARCHAR(36) NOT NULL,
+      [processo_id] NVARCHAR(36) NOT NULL,
+      [ordem] INT NOT NULL,
+      [nome] NVARCHAR(200) NOT NULL,
+      [quantidade_kg] DECIMAL(18,6),
+      [orientacao] NVARCHAR(300) NOT NULL,
+      CONSTRAINT [tp_ficha_ingredientes_op_pk] PRIMARY KEY CLUSTERED ([id]),
+      CONSTRAINT [tp_ficha_ingredientes_op_ordem_uq] UNIQUE NONCLUSTERED ([processo_id],[ordem])
   );
 
   -- CreateTable
@@ -309,21 +405,50 @@ BEGIN
       [status] NVARCHAR(20) NOT NULL CONSTRAINT [tp_ficha_aprovacoes_status_df] DEFAULT 'pendente',
       [decidido_por] NVARCHAR(320),
       [decidido_em] DATETIME2,
-      [justificativa] NVARCHAR(1000),
+      [comentario] NVARCHAR(1000),
+      [identificador] NVARCHAR(60),
       CONSTRAINT [tp_ficha_aprovacoes_pk] PRIMARY KEY CLUSTERED ([id]),
       CONSTRAINT [tp_ficha_aprovacoes_versao_area_uq] UNIQUE NONCLUSTERED ([versao_id],[area])
   );
 
   -- CreateTable
-  CREATE TABLE [dbo].[tp_ficha_historico] (
+  CREATE TABLE [dbo].[tp_ficha_alteracoes_documentais] (
+      [id] NVARCHAR(36) NOT NULL,
+      [versao_id] NVARCHAR(36) NOT NULL,
+      [revisao] NVARCHAR(20) NOT NULL,
+      [data] DATETIME2 NOT NULL,
+      [alteracao] NVARCHAR(1000) NOT NULL,
+      [responsavel] NVARCHAR(200) NOT NULL,
+      CONSTRAINT [tp_ficha_alteracoes_pk] PRIMARY KEY CLUSTERED ([id])
+  );
+
+  -- CreateTable
+  CREATE TABLE [dbo].[tp_ficha_auditoria] (
       [id] NVARCHAR(36) NOT NULL,
       [ficha_id] NVARCHAR(36) NOT NULL,
       [versao_id] NVARCHAR(36),
-      [acao] NVARCHAR(30) NOT NULL,
+      [evento] NVARCHAR(40) NOT NULL,
+      [campo] NVARCHAR(120),
+      [valor_anterior] NVARCHAR(1000),
+      [valor_novo] NVARCHAR(1000),
       [autor] NVARCHAR(320) NOT NULL,
-      [detalhe] NVARCHAR(1000),
-      [created_at] DATETIME2 NOT NULL CONSTRAINT [tp_ficha_historico_created_at_df] DEFAULT CURRENT_TIMESTAMP,
-      CONSTRAINT [tp_ficha_historico_pk] PRIMARY KEY CLUSTERED ([id])
+      [motivo] NVARCHAR(1000),
+      [created_at] DATETIME2 NOT NULL CONSTRAINT [tp_ficha_auditoria_created_at_df] DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT [tp_ficha_auditoria_pk] PRIMARY KEY CLUSTERED ([id])
+  );
+
+  -- CreateTable
+  CREATE TABLE [dbo].[tp_ficha_integracoes] (
+      [id] NVARCHAR(36) NOT NULL,
+      [versao_id] NVARCHAR(36) NOT NULL,
+      [status] NVARCHAR(20) NOT NULL CONSTRAINT [tp_ficha_integracoes_status_df] DEFAULT 'pendente',
+      [codigo_produto] NVARCHAR(30),
+      [revisao_protheus] NVARCHAR(20),
+      [mensagem] NVARCHAR(2000),
+      [tentativa] INT NOT NULL CONSTRAINT [tp_ficha_integracoes_tentativa_df] DEFAULT 1,
+      [autor] NVARCHAR(320) NOT NULL,
+      [created_at] DATETIME2 NOT NULL CONSTRAINT [tp_ficha_integracoes_created_at_df] DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT [tp_ficha_integracoes_pk] PRIMARY KEY CLUSTERED ([id])
   );
 
   -- CreateIndex
@@ -366,6 +491,9 @@ BEGIN
   CREATE NONCLUSTERED INDEX [tp_fichas_pasta_idx] ON [dbo].[tp_fichas]([restaurante_id], [linha_id]);
 
   -- CreateIndex
+  CREATE NONCLUSTERED INDEX [tp_ficha_fases_origem_idx] ON [dbo].[tp_ficha_fases]([origem_versao_id]);
+
+  -- CreateIndex
   CREATE NONCLUSTERED INDEX [tp_ficha_versoes_status_idx] ON [dbo].[tp_ficha_versoes]([status]);
 
   -- CreateIndex
@@ -384,7 +512,19 @@ BEGIN
   CREATE NONCLUSTERED INDEX [tp_ficha_aprovacoes_status_idx] ON [dbo].[tp_ficha_aprovacoes]([status]);
 
   -- CreateIndex
-  CREATE NONCLUSTERED INDEX [tp_ficha_historico_ficha_data_idx] ON [dbo].[tp_ficha_historico]([ficha_id], [created_at]);
+  CREATE NONCLUSTERED INDEX [tp_ficha_alteracoes_versao_idx] ON [dbo].[tp_ficha_alteracoes_documentais]([versao_id]);
+
+  -- CreateIndex
+  CREATE NONCLUSTERED INDEX [tp_ficha_auditoria_ficha_data_idx] ON [dbo].[tp_ficha_auditoria]([ficha_id], [created_at]);
+
+  -- CreateIndex
+  CREATE NONCLUSTERED INDEX [tp_ficha_auditoria_evento_idx] ON [dbo].[tp_ficha_auditoria]([evento]);
+
+  -- CreateIndex
+  CREATE NONCLUSTERED INDEX [tp_ficha_integracoes_versao_data_idx] ON [dbo].[tp_ficha_integracoes]([versao_id], [created_at]);
+
+  -- CreateIndex
+  CREATE NONCLUSTERED INDEX [tp_ficha_integracoes_status_idx] ON [dbo].[tp_ficha_integracoes]([status]);
 
   -- AddForeignKey
   ALTER TABLE [dbo].[tp_fichas] ADD CONSTRAINT [tp_fichas_restaurante_id_fkey] FOREIGN KEY ([restaurante_id]) REFERENCES [dbo].[tp_ficha_restaurantes]([id]) ON DELETE NO ACTION ON UPDATE CASCADE;
@@ -393,7 +533,16 @@ BEGIN
   ALTER TABLE [dbo].[tp_fichas] ADD CONSTRAINT [tp_fichas_linha_id_fkey] FOREIGN KEY ([linha_id]) REFERENCES [dbo].[tp_ficha_linhas]([id]) ON DELETE NO ACTION ON UPDATE CASCADE;
 
   -- AddForeignKey
-  ALTER TABLE [dbo].[tp_ficha_versoes] ADD CONSTRAINT [tp_ficha_versoes_ficha_id_fkey] FOREIGN KEY ([ficha_id]) REFERENCES [dbo].[tp_fichas]([id]) ON DELETE CASCADE ON UPDATE CASCADE;
+  ALTER TABLE [dbo].[tp_ficha_fases] ADD CONSTRAINT [tp_ficha_fases_ficha_id_fkey] FOREIGN KEY ([ficha_id]) REFERENCES [dbo].[tp_fichas]([id]) ON DELETE CASCADE ON UPDATE CASCADE;
+
+  -- AddForeignKey
+  ALTER TABLE [dbo].[tp_ficha_fases] ADD CONSTRAINT [tp_ficha_fases_origem_versao_id_fkey] FOREIGN KEY ([origem_versao_id]) REFERENCES [dbo].[tp_ficha_versoes]([id]) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+  -- AddForeignKey
+  ALTER TABLE [dbo].[tp_ficha_fases] ADD CONSTRAINT [tp_ficha_fases_linha_producao_id_fkey] FOREIGN KEY ([linha_producao_id]) REFERENCES [dbo].[tp_linhas_producao]([id]) ON DELETE SET NULL ON UPDATE CASCADE;
+
+  -- AddForeignKey
+  ALTER TABLE [dbo].[tp_ficha_versoes] ADD CONSTRAINT [tp_ficha_versoes_fase_id_fkey] FOREIGN KEY ([fase_id]) REFERENCES [dbo].[tp_ficha_fases]([id]) ON DELETE CASCADE ON UPDATE CASCADE;
 
   -- AddForeignKey
   ALTER TABLE [dbo].[tp_ficha_etapas] ADD CONSTRAINT [tp_ficha_etapas_versao_id_fkey] FOREIGN KEY ([versao_id]) REFERENCES [dbo].[tp_ficha_versoes]([id]) ON DELETE CASCADE ON UPDATE CASCADE;
@@ -405,13 +554,28 @@ BEGIN
   ALTER TABLE [dbo].[tp_ficha_perdas] ADD CONSTRAINT [tp_ficha_perdas_etapa_id_fkey] FOREIGN KEY ([etapa_id]) REFERENCES [dbo].[tp_ficha_etapas]([id]) ON DELETE CASCADE ON UPDATE CASCADE;
 
   -- AddForeignKey
+  ALTER TABLE [dbo].[tp_ficha_processos] ADD CONSTRAINT [tp_ficha_processos_versao_id_fkey] FOREIGN KEY ([versao_id]) REFERENCES [dbo].[tp_ficha_versoes]([id]) ON DELETE CASCADE ON UPDATE CASCADE;
+
+  -- AddForeignKey
+  ALTER TABLE [dbo].[tp_ficha_processo_passos] ADD CONSTRAINT [tp_ficha_processo_passos_processo_id_fkey] FOREIGN KEY ([processo_id]) REFERENCES [dbo].[tp_ficha_processos]([id]) ON DELETE CASCADE ON UPDATE CASCADE;
+
+  -- AddForeignKey
+  ALTER TABLE [dbo].[tp_ficha_ingredientes_operacionais] ADD CONSTRAINT [tp_ficha_ingredientes_operacionais_processo_id_fkey] FOREIGN KEY ([processo_id]) REFERENCES [dbo].[tp_ficha_processos]([id]) ON DELETE CASCADE ON UPDATE CASCADE;
+
+  -- AddForeignKey
   ALTER TABLE [dbo].[tp_ficha_aprovacoes] ADD CONSTRAINT [tp_ficha_aprovacoes_versao_id_fkey] FOREIGN KEY ([versao_id]) REFERENCES [dbo].[tp_ficha_versoes]([id]) ON DELETE CASCADE ON UPDATE CASCADE;
 
   -- AddForeignKey
-  ALTER TABLE [dbo].[tp_ficha_historico] ADD CONSTRAINT [tp_ficha_historico_ficha_id_fkey] FOREIGN KEY ([ficha_id]) REFERENCES [dbo].[tp_fichas]([id]) ON DELETE CASCADE ON UPDATE CASCADE;
+  ALTER TABLE [dbo].[tp_ficha_alteracoes_documentais] ADD CONSTRAINT [tp_ficha_alteracoes_documentais_versao_id_fkey] FOREIGN KEY ([versao_id]) REFERENCES [dbo].[tp_ficha_versoes]([id]) ON DELETE CASCADE ON UPDATE CASCADE;
 
   -- AddForeignKey
-  ALTER TABLE [dbo].[tp_ficha_historico] ADD CONSTRAINT [tp_ficha_historico_versao_id_fkey] FOREIGN KEY ([versao_id]) REFERENCES [dbo].[tp_ficha_versoes]([id]) ON DELETE NO ACTION ON UPDATE NO ACTION;
+  ALTER TABLE [dbo].[tp_ficha_auditoria] ADD CONSTRAINT [tp_ficha_auditoria_ficha_id_fkey] FOREIGN KEY ([ficha_id]) REFERENCES [dbo].[tp_fichas]([id]) ON DELETE CASCADE ON UPDATE CASCADE;
+
+  -- AddForeignKey
+  ALTER TABLE [dbo].[tp_ficha_auditoria] ADD CONSTRAINT [tp_ficha_auditoria_versao_id_fkey] FOREIGN KEY ([versao_id]) REFERENCES [dbo].[tp_ficha_versoes]([id]) ON DELETE NO ACTION ON UPDATE NO ACTION;
+
+  -- AddForeignKey
+  ALTER TABLE [dbo].[tp_ficha_integracoes] ADD CONSTRAINT [tp_ficha_integracoes_versao_id_fkey] FOREIGN KEY ([versao_id]) REFERENCES [dbo].[tp_ficha_versoes]([id]) ON DELETE CASCADE ON UPDATE CASCADE;
 
   COMMIT TRAN;
 

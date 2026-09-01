@@ -17,21 +17,12 @@ export type IconName =
   | 'chevronLeft'
   | 'box'
   | 'pulse'
-  | 'flask'
 
 const PATHS: Record<IconName, React.ReactNode> = {
   // Linha de monitoramento: diagnostico do sistema.
   pulse: (
     <>
       <path d="M3 12h4l2.5-6 4 12 2.5-6h5" />
-    </>
-  ),
-  // Erlenmeyer: fichas tecnicas de P&D.
-  flask: (
-    <>
-      <path d="M9.5 3h5" />
-      <path d="M10.5 3v6.2L5.6 17.4A2 2 0 0 0 7.3 20.5h9.4a2 2 0 0 0 1.7-3.1L13.5 9.2V3" />
-      <path d="M8 15h8" />
     </>
   ),
   // Caixa em perspectiva: cadastro de produto.

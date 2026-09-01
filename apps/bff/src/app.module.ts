@@ -7,7 +7,6 @@ import { PermissionsGuard } from './auth/guards/permissions.guard'
 import { HealthController } from './common/health.controller'
 import { DatabaseModule } from './database/database.module'
 import { DiagnosticsModule } from './diagnostics/diagnostics.module'
-import { FichasModule } from './fichas/fichas.module'
 import { ParametersModule } from './parameters/parameters.module'
 import { PrismaModule } from './prisma/prisma.module'
 import { ProductsModule } from './products/products.module'
@@ -30,8 +29,6 @@ import { UsersModule } from './users/users.module'
     ProtheusModule,
     // Cadastro de produtos espelhado do ERP.
     ProductsModule,
-    // Fichas Tecnicas de P&D.
-    FichasModule,
     // Modulos novos entram aqui. Padrao: um modulo por dominio de negocio.
   ],
   controllers: [HealthController],

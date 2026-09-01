@@ -3,7 +3,6 @@ import * as parametersApi from './parameters'
 import * as productsApi from './products'
 import * as databaseApi from './database'
 import * as diagnosticsApi from './diagnostics'
-import * as fichasApi from './fichas'
 import * as protheusApi from './protheus'
 import * as usersApi from './users'
 import type { HttpConfig } from './http'
@@ -43,28 +42,6 @@ export function createApiClient(config: HttpConfig) {
       get: (id: string) => productsApi.getProduct(config, id),
       sync: (params?: Parameters<typeof productsApi.syncProducts>[1]) =>
         productsApi.syncProducts(config, params),
-    },
-
-    // Modulo Fichas Tecnicas de P&D
-    fichas: {
-      marcas: () => fichasApi.listFichaMarcas(config),
-      linhas: (restauranteId: string) => fichasApi.listFichaLinhas(config, restauranteId),
-      list: (params?: Parameters<typeof fichasApi.listFichas>[1]) =>
-        fichasApi.listFichas(config, params),
-      get: (id: string) => fichasApi.getFicha(config, id),
-      versao: (versaoId: string) => fichasApi.getFichaVersao(config, versaoId),
-      criar: (input: Parameters<typeof fichasApi.criarFicha>[1]) =>
-        fichasApi.criarFicha(config, input),
-      gerarVersao: (versaoId: string, input: Parameters<typeof fichasApi.gerarVersaoFicha>[2]) =>
-        fichasApi.gerarVersaoFicha(config, versaoId, input),
-      avaliarPromocao: (faseId: string) => fichasApi.avaliarPromocaoFicha(config, faseId),
-      promover: (faseId: string, input: Parameters<typeof fichasApi.promoverFicha>[2]) =>
-        fichasApi.promoverFicha(config, faseId, input),
-      decidir: (
-        versaoId: string,
-        area: string,
-        input: Parameters<typeof fichasApi.decidirAprovacaoFicha>[3],
-      ) => fichasApi.decidirAprovacaoFicha(config, versaoId, area, input),
     },
 
     // Modulo Configurador

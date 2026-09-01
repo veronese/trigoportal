@@ -52,22 +52,6 @@ export const NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
-    href: '/fichas',
-    label: 'Fichas Tecnicas',
-    shortLabel: 'Fichas',
-    description: 'Desenvolvimento de produto: bancada, batida teste e FT Producao.',
-    icon: 'flask',
-    items: [
-      {
-        href: '/fichas',
-        label: 'Fichas de P&D',
-        description: 'Formulacao, custo, rendimento e versoes por fase de desenvolvimento.',
-        icon: 'flask',
-        permission: 'fichas:read',
-      },
-    ],
-  },
-  {
     href: '/integracoes',
     label: 'Integracoes',
     shortLabel: 'Integr.',

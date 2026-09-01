@@ -14,16 +14,6 @@ export const PERMISSIONS = [
   // Modulo Cadastros - produtos espelhados do Protheus
   'products:read',
   'products:sync',
-  // Modulo Fichas Tecnicas de P&D. Separadas porque as consequencias sao
-  // diferentes: gerar versao congela, promover muda de fase, integrar escreve
-  // no ERP, e custo e informacao comercial que nem todo perfil deve ver.
-  'fichas:read',
-  'fichas:write',
-  'fichas:versionar',
-  'fichas:promover',
-  'fichas:aprovar',
-  'fichas:integrar',
-  'fichas:custo',
   // modulos futuros seguem o mesmo padrao <recurso>:<acao>
   // 'pedidos:read', 'pedidos:approve', ...
 ] as const
@@ -48,29 +38,11 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     'settings:write',
     'products:read',
     'products:sync',
-    'fichas:read',
-    'fichas:write',
-    'fichas:versionar',
-    'fichas:promover',
-    'fichas:aprovar',
-    'fichas:integrar',
-    'fichas:custo',
   ],
   // Gestor enxerga cadastros e consulta a parametrizacao, mas nao altera nada sistemico.
-  MANAGER: [
-    'users:read',
-    'settings:read',
-    'products:read',
-    'fichas:read',
-    'fichas:write',
-    'fichas:versionar',
-    'fichas:promover',
-    'fichas:aprovar',
-    'fichas:custo',
-  ],
+  MANAGER: ['users:read', 'settings:read', 'products:read'],
   // Consultar produto e leitura de cadastro corporativo: todo usuario autenticado.
-  // P&D no papel de usuario: cria e versiona, mas nao promove nem aprova.
-  USER: ['products:read', 'fichas:read', 'fichas:write', 'fichas:versionar'],
+  USER: ['products:read'],
 }
 
 /**
@@ -85,13 +57,6 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   'settings:write': 'Alterar a parametrizacao do sistema',
   'products:read': 'Consultar produtos',
   'products:sync': 'Disparar a carga de produtos do Protheus',
-  'fichas:read': 'Consultar fichas tecnicas',
-  'fichas:write': 'Criar e editar fichas',
-  'fichas:versionar': 'Gerar versao de uma ficha',
-  'fichas:promover': 'Promover a ficha para a proxima fase',
-  'fichas:aprovar': 'Aprovar ou reprovar uma versao',
-  'fichas:integrar': 'Enviar a estrutura para o Protheus',
-  'fichas:custo': 'Ver custo, preco e margem das fichas',
 }
 
 export function can(role: Role, permission: Permission): boolean {

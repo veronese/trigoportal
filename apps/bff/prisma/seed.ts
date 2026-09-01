@@ -2,7 +2,6 @@ import { PrismaClient } from '@prisma/client'
 import { hashPassword } from '../src/common/password'
 import { PARAMETER_CATALOG } from '../src/parameters/parameter-catalog'
 import { SecretCipher } from '../src/common/secret-cipher'
-import { seedFichaReferencia } from './seed-fichas'
 
 const prisma = new PrismaClient()
 
@@ -123,7 +122,6 @@ async function migrarCredencialProtheus(): Promise<void> {
 async function main(): Promise<void> {
   await seedAdmin()
   await seedParameters()
-  await seedFichaReferencia(prisma)
 }
 
 main()

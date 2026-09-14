@@ -6,7 +6,7 @@
     "dev": "nest start --watch",
     "build": "prisma generate --schema prisma/schema.prisma && nest build",
     "start": "node dist/main.js",
-    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.scripts.json && tsx scripts/gerar-script-implantacao.ts --verificar && tsx scripts/gerar-schema-sqlite.ts --verificar",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.scripts.json && tsx scripts/gerar-script-implantacao.ts --verificar && tsx scripts/gerar-schema-sqlite.ts --verificar && tsx scripts/verificar-guarda-sql.ts",
     "db:push": "tsx scripts/renomear-para-convencao.ts && prisma db push && prisma generate && tsx scripts/aplicar-sql.ts",
     "db:studio": "prisma studio",
     "db:seed": "prisma db seed",
@@ -16,11 +16,13 @@
     "db:gerar-script": "tsx scripts/gerar-script-implantacao.ts",
     "db:verificar-script": "tsx scripts/gerar-script-implantacao.ts --verificar",
     "db:sqlite:gerar": "tsx scripts/gerar-schema-sqlite.ts",
-    "db:sqlite:verificar": "tsx scripts/gerar-schema-sqlite.ts --verificar",
+    "db:sqlite:verificar": "tsx scripts/gerar-schema-sqlite.ts --verificar && tsx scripts/verificar-guarda-sql.ts",
     "db:local": "pnpm db:sqlite:gerar && prisma db push --schema prisma/schema.sqlite.prisma && prisma generate --schema prisma/schema.sqlite.prisma && tsx scripts/aplicar-sql.ts --sqlite && prisma db seed --schema prisma/schema.sqlite.prisma",
     "db:sqlserver": "prisma generate --schema prisma/schema.prisma",
     "db:sqlite": "pnpm db:sqlite:gerar && prisma generate --schema prisma/schema.sqlite.prisma",
     "carregar-produtos": "nest build && node dist/products/carregar-produtos.cli.js",
+    "carregar-produtos-banco": "nest build && node dist/products/carregar-produtos-banco.cli.js",
+    "verificar-guarda-sql": "tsx scripts/verificar-guarda-sql.ts",
     "diagnostico": "nest build && node dist/diagnostics/diagnostico.cli.js"
   },
   "dependencies": {

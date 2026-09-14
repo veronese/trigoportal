@@ -81,6 +81,10 @@ export function createApiClient(config: HttpConfig) {
     protheusDb: {
       config: () => protheusDbApi.getProtheusDbConfig(config),
       testar: () => protheusDbApi.testProtheusDb(config),
+      tabelas: (busca?: string) => protheusDbApi.listProtheusDbTabelas(config, busca),
+      colunas: (tabela: string) => protheusDbApi.getProtheusDbColunas(config, tabela),
+      consultar: (sql: string, limite?: number) =>
+        protheusDbApi.consultarProtheusDb(config, sql, limite),
     },
   }
 }

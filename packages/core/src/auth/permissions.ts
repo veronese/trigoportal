@@ -14,6 +14,10 @@ export const PERMISSIONS = [
   // Modulo Cadastros - produtos espelhados do Protheus
   'products:read',
   'products:sync',
+  // Console de consulta ao banco do ERP. Separada de settings de proposito:
+  // escrever SQL livre contra a producao do Protheus e poder de outra ordem,
+  // e quem administra parametro nao precisa necessariamente te-lo.
+  'protheusdb:consultar',
   // modulos futuros seguem o mesmo padrao <recurso>:<acao>
   // 'pedidos:read', 'pedidos:approve', ...
 ] as const
@@ -57,6 +61,7 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   'settings:write': 'Alterar a parametrizacao do sistema',
   'products:read': 'Consultar produtos',
   'products:sync': 'Disparar a carga de produtos do Protheus',
+  'protheusdb:consultar': 'Consultar o banco do Protheus por SQL',
 }
 
 export function can(role: Role, permission: Permission): boolean {

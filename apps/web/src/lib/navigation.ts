@@ -73,6 +73,13 @@ export const NAV_SECTIONS: NavSection[] = [
         permission: 'settings:read',
       },
       {
+        href: '/integracoes/banco-protheus/consulta',
+        label: 'Consulta SQL',
+        description: 'Console de consulta ao banco do ERP. Somente leitura, em todas as tabelas.',
+        icon: 'database',
+        permission: 'protheusdb:consultar',
+      },
+      {
         href: '/integracoes/protheus',
         label: 'Protheus',
         description: 'Situacao da conexao com o ERP, teste de autenticacao e carga de cadastros.',

@@ -1,6 +1,19 @@
-import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common'
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  ServiceUnavailableException,
+} from '@nestjs/common'
 import sql from 'mssql'
-import type { ProtheusDbConfig, ProtheusDbTabela, ProtheusDbTestResult } from '@trigo/core'
+import {
+  analisarSqlLeitura,
+  type ColunaBanco,
+  type ConsultaSqlResult,
+  type ProtheusDbConfig,
+  type ProtheusDbTabela,
+  type ProtheusDbTestResult,
+  type TabelaBanco,
+} from '@trigo/core'
 import { ParametersService } from '../parameters/parameters.service'
 
 /** O que o BFF precisa para abrir a conexao. Fica no processo, nunca sai. */
@@ -124,6 +137,94 @@ export class ProtheusDbService {
       return await trabalho(pool)
     } finally {
       await pool.close().catch(() => undefined)
+    }
+  }
+
+  /**
+   * Uma pagina do cadastro de produtos, direto da tabela fisica.
+   *
+   * SEM FILTRO DE FILIAL de proposito. A SB1 e compartilhada, e a contagem por
+   * `D_E_L_E_T_` sozinha deu exatamente os 30.393 que a carga REST trouxe da
+   * empresa 02 — o filtro de filial nao mudaria nada e so poderia zerar o
+   * resultado se o dicionario mudasse.
+   *
+   * ORDER BY R_E_C_N_O_ porque OFFSET exige ordenacao e o RECNO e a unica
+   * estavel: por B1_COD, um produto incluido no meio da carga deslocaria a
+   * paginacao e sumiria de uma pagina ja lida.
+   */
+  async lerProdutos(opcoes: {
+    empresa: string
+    pulo: number
+    tamanho: number
+  }): Promise<Record<string, unknown>[]> {
+    const tabela = this.tabelaProdutos(opcoes.empresa)
+
+    return this.comConexao(async (pool) => {
+      // O nome da tabela nao entra como parametro em banco nenhum, entao e
+      // montado a partir da empresa JA validada e conferido no catalogo antes
+      // de ser concatenado.
+      await this.exigirTabela(pool, tabela)
+
+      const resultado = await pool
+        .request()
+        .input('pulo', sql.Int, Math.max(0, Math.trunc(opcoes.pulo)))
+        .input('tamanho', sql.Int, Math.max(1, Math.trunc(opcoes.tamanho)))
+        .query<Record<string, unknown>>(`
+          SELECT
+            TAB.B1_COD, TAB.B1_DESC, TAB.B1_TIPO, TAB.B1_UM,
+            TAB.B1_LOCPAD, TAB.B1_GRUPO, TAB.B1_MSBLQL, TAB.B1_ATIVO,
+            TAB.B1_POSIPI, TAB.B1_XCTACUS, TAB.B1_XCTADES, TAB.B1_XCONTA,
+            TAB.B1_CONTA, TAB.B1_MODELO
+          FROM [${tabela}] TAB WITH (NOLOCK)
+          WHERE TAB.D_E_L_E_T_ = ' '
+          ORDER BY TAB.R_E_C_N_O_
+          OFFSET @pulo ROWS FETCH NEXT @tamanho ROWS ONLY
+        `)
+
+      return resultado.recordset
+    })
+  }
+
+  /** Quantos produtos vivos a empresa tem. */
+  async contarProdutos(empresa: string): Promise<number> {
+    const tabela = this.tabelaProdutos(empresa)
+
+    return this.comConexao(async (pool) => {
+      await this.exigirTabela(pool, tabela)
+      const r = await pool
+        .request()
+        .query<{ total: number }>(
+          `SELECT COUNT(*) AS total FROM [${tabela}] WITH (NOLOCK) WHERE D_E_L_E_T_ = ' '`,
+        )
+      return r.recordset[0]?.total ?? 0
+    })
+  }
+
+  /**
+   * Nome fisico da tabela de produtos, com a empresa validada.
+   *
+   * Padrao do Protheus: <alias><empresa>0. Empresa 02 le SB1020, empresa 09 le
+   * SB1090 — atencao que o codigo e 09, e nao 90.
+   */
+  private tabelaProdutos(empresa: string): string {
+    const limpo = empresa.trim()
+    if (!/^[A-Za-z0-9]{2}$/.test(limpo)) {
+      throw new BadRequestException(
+        `Empresa invalida: "${empresa}". Espero dois caracteres alfanumericos, como 02 ou 09.`,
+      )
+    }
+    return `SB1${limpo}0`
+  }
+
+  /** Recusa antes de concatenar um nome que o catalogo nao conhece. */
+  private async exigirTabela(pool: sql.ConnectionPool, tabela: string): Promise<void> {
+    const r = await pool
+      .request()
+      .input('nome', sql.VarChar(128), tabela)
+      .query<{ total: number }>(`SELECT COUNT(*) AS total FROM sys.tables WHERE name = @nome`)
+
+    if ((r.recordset[0]?.total ?? 0) === 0) {
+      throw new BadRequestException(`A tabela ${tabela} nao existe neste banco.`)
     }
   }
 
@@ -280,6 +381,165 @@ export class ProtheusDbService {
     }
 
     return resultado
+  }
+
+  // ------------------------------------------------------------------ console
+
+  /**
+   * Todas as tabelas do banco, para navegar antes de escrever a consulta.
+   *
+   * A contagem vem de `sys.dm_db_partition_stats`, que e ESTIMATIVA das
+   * estatisticas. Um COUNT em cada tabela de um ERP levaria minutos e ainda
+   * seguraria a tela — para escolher a tabela, a ordem de grandeza basta, e a
+   * consulta que a pessoa vai escrever conta de verdade.
+   */
+  async listarTabelas(busca?: string): Promise<TabelaBanco[]> {
+    const filtro = (busca ?? '').trim()
+
+    return this.comConexao(async (pool) => {
+      const r = await pool
+        .request()
+        .input('busca', sql.VarChar(128), filtro === '' ? null : `%${filtro}%`)
+        .query<{ nome: string; esquema: string; registros: number }>(`
+          SELECT
+            t.name                       AS nome,
+            s.name                       AS esquema,
+            CONVERT(int, ISNULL(SUM(p.row_count), 0)) AS registros
+          FROM sys.tables t
+          JOIN sys.schemas s ON s.schema_id = t.schema_id
+          LEFT JOIN sys.dm_db_partition_stats p
+                 ON p.object_id = t.object_id AND p.index_id IN (0, 1)
+          WHERE (@busca IS NULL OR t.name LIKE @busca)
+          GROUP BY t.name, s.name
+          ORDER BY t.name
+        `)
+
+      return r.recordset.map((linha) => ({
+        nome: linha.nome,
+        esquema: linha.esquema,
+        registrosEstimados: linha.registros,
+      }))
+    })
+  }
+
+  /** Colunas de uma tabela, com tipo e tamanho do dicionario fisico. */
+  async descreverTabela(tabela: string): Promise<ColunaBanco[]> {
+    const nome = tabela.trim()
+    if (!/^[A-Za-z0-9_$#]{1,128}$/.test(nome)) {
+      throw new BadRequestException(`Nome de tabela invalido: "${tabela}".`)
+    }
+
+    return this.comConexao(async (pool) => {
+      const r = await pool
+        .request()
+        .input('nome', sql.VarChar(128), nome)
+        .query<{ nome: string; tipo: string; tamanho: number; nulo: boolean }>(`
+          SELECT
+            c.name                AS nome,
+            ty.name               AS tipo,
+            c.max_length          AS tamanho,
+            c.is_nullable         AS nulo
+          FROM sys.columns c
+          JOIN sys.tables t  ON t.object_id = c.object_id
+          JOIN sys.types ty  ON ty.user_type_id = c.user_type_id
+          WHERE t.name = @nome
+          ORDER BY c.column_id
+        `)
+
+      return r.recordset.map((linha) => ({
+        nome: linha.nome,
+        tipo: linha.tipo,
+        tamanho: linha.tamanho === -1 ? null : linha.tamanho,
+        aceitaNulo: Boolean(linha.nulo),
+      }))
+    })
+  }
+
+  /**
+   * Executa uma consulta escrita a mao.
+   *
+   * DUAS TRAVAS, e as duas precisam existir:
+   *
+   *  - `analisarSqlLeitura` recusa o que nao for SELECT/WITH. Ela e a que
+   *    produz mensagem util; sozinha, seria contornavel por alguem que
+   *    conheca SQL melhor que a lista.
+   *  - o LOGIN somente leitura e quem de fato impede a escrita, no servidor.
+   *    Sozinho, devolveria um erro do driver que ninguem entende.
+   *
+   * `SET ROWCOUNT` limita no BANCO, e nao no Node. Cortar depois de receber
+   * significaria materializar milhoes de linhas de uma SD1 na memoria do BFF
+   * antes de jogar fora.
+   */
+  async consultar(sqlBruto: string, limite: number, autor: string): Promise<ConsultaSqlResult> {
+    const inicio = Date.now()
+    const teto = Math.max(1, Math.min(10000, Math.trunc(limite)))
+
+    const analise = analisarSqlLeitura(sqlBruto)
+    if (!analise.permitido) {
+      return {
+        ok: false,
+        colunas: [],
+        linhas: [],
+        totalLinhas: 0,
+        truncado: false,
+        duracaoMs: Date.now() - inicio,
+        erro: analise.motivo,
+      }
+    }
+
+    // Consulta livre contra a producao do ERP fica registrada com o autor. Nao
+    // e auditoria formal, mas responde "quem rodou aquilo" sem adivinhacao.
+    this.logger.log(`Consulta ao banco do Protheus por ${autor}: ${this.resumir(sqlBruto)}`)
+
+    try {
+      return await this.comConexao(async (pool) => {
+        const request = pool.request()
+        // +1 para saber se havia mais linhas alem do limite, sem contar duas vezes.
+        const resultado = await request.query(
+          `SET ROWCOUNT ${teto + 1};
+${sqlBruto};
+SET ROWCOUNT 0;`,
+        )
+
+        const recordset = resultado.recordset ?? []
+        const truncado = recordset.length > teto
+        const linhas = (truncado ? recordset.slice(0, teto) : recordset) as Record<
+          string,
+          unknown
+        >[]
+
+        // A ordem das colunas vem do metadata, e nao das chaves do objeto:
+        // JSON nao garante ordem, e a tela precisa das colunas como no SELECT.
+        const colunas = Object.keys(resultado.recordset?.columns ?? {})
+
+        return {
+          ok: true,
+          colunas: colunas.length > 0 ? colunas : Object.keys(linhas[0] ?? {}),
+          linhas,
+          totalLinhas: linhas.length,
+          truncado,
+          duracaoMs: Date.now() - inicio,
+          erro: null,
+        }
+      })
+    } catch (error) {
+      const erro = error instanceof Error ? error.message : String(error)
+      return {
+        ok: false,
+        colunas: [],
+        linhas: [],
+        totalLinhas: 0,
+        truncado: false,
+        duracaoMs: Date.now() - inicio,
+        erro: this.explicar(erro),
+      }
+    }
+  }
+
+  /** Uma linha do SQL para o log, sem despejar a consulta inteira. */
+  private resumir(sqlBruto: string): string {
+    const linha = sqlBruto.replace(/\s+/g, ' ').trim()
+    return linha.length > 200 ? `${linha.slice(0, 200)}...` : linha
   }
 
   /**

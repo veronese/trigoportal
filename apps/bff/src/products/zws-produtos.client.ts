@@ -69,7 +69,7 @@ export interface ZwsProdutosPagina {
 /** O endpoint sinaliza "consulta sem registro" com este codigo, em HTTP 500. */
 const ERRO_SEM_REGISTRO = 'ALL003'
 
-const texto = (valor: unknown): string => (typeof valor === 'string' ? valor.trimEnd() : '')
+export const textoDe = (valor: unknown): string => (typeof valor === 'string' ? valor.trimEnd() : '')
 const inteiro = (valor: unknown, padrao = 0): number => {
   const n = typeof valor === 'number' ? valor : Number(valor)
   return Number.isFinite(n) ? Math.trunc(n) : padrao
@@ -82,7 +82,7 @@ const inteiro = (valor: unknown, padrao = 0): number => {
  * explicitamente vem com '2' — tratar isso como bloqueado esconderia do portal
  * a maior parte do cadastro.
  */
-const bloqueadoDe = (valor: unknown): boolean => texto(valor) === '1'
+export const bloqueadoDe = (valor: unknown): boolean => textoDe(valor) === '1'
 
 /**
  * B1_ATIVO: dominio S/N.
@@ -90,7 +90,7 @@ const bloqueadoDe = (valor: unknown): boolean => texto(valor) === '1'
  * Vazio conta como ATIVO. Em base antiga o campo pode nunca ter sido
  * preenchido, e assumir inativo esconderia produto em uso.
  */
-const ativoDe = (valor: unknown): boolean => texto(valor).toUpperCase() !== 'N'
+export const ativoDe = (valor: unknown): boolean => textoDe(valor).toUpperCase() !== 'N'
 
 /**
  * Cliente do WSRESTFUL `zWsProdutos`, que ja existia no Protheus do Trigo.
@@ -132,11 +132,11 @@ export class ZwsProdutosClient {
 
   /** Junta o que houver de mensagem, do endpoint ou da camada REST. */
   private detalhar(payload: ZwsRespostaBruta | null, status: number): string {
-    const doEndpoint = [texto(payload?.error), texto(payload?.solution)].filter(Boolean).join(' — ')
+    const doEndpoint = [textoDe(payload?.error), textoDe(payload?.solution)].filter(Boolean).join(' — ')
     const daCamadaRest = [
-      texto(payload?.errorMessage),
-      texto(payload?.message),
-      texto(payload?.detailedMessage),
+      textoDe(payload?.errorMessage),
+      textoDe(payload?.message),
+      textoDe(payload?.detailedMessage),
     ]
       .filter(Boolean)
       .join(' — ')
@@ -176,7 +176,7 @@ export class ZwsProdutosClient {
     }
 
     if (!ok) {
-      if (texto(payload?.errorId) === ERRO_SEM_REGISTRO) return vazia
+      if (textoDe(payload?.errorId) === ERRO_SEM_REGISTRO) return vazia
 
       const detalhe = this.detalhar(payload, status)
       throw new ServiceUnavailableException({
@@ -206,24 +206,24 @@ export class ZwsProdutosClient {
 
   /** Produto sem codigo nao tem chave: nao ha o que gravar nem atualizar. */
   private converter(bruto: ZwsProdutoBruto): ZwsProduto | null {
-    const codigo = texto(bruto.cod)
+    const codigo = textoDe(bruto.cod)
     if (codigo === '') return null
 
     return {
       codigo,
-      descricao: texto(bruto.desc),
-      tipo: texto(bruto.tipo),
-      unidade: texto(bruto.um),
-      armazemPadrao: texto(bruto.locpad),
-      grupo: texto(bruto.grupo),
+      descricao: textoDe(bruto.desc),
+      tipo: textoDe(bruto.tipo),
+      unidade: textoDe(bruto.um),
+      armazemPadrao: textoDe(bruto.locpad),
+      grupo: textoDe(bruto.grupo),
       bloqueado: bloqueadoDe(bruto.bloqueado),
       ativo: ativoDe(bruto.ativo),
-      ncm: texto(bruto.ncm),
-      centroCusto: texto(bruto.ccusto),
-      contaDespesa: texto(bruto.cdespesa),
-      contaAtivo: texto(bruto.cativo),
-      contaReceita: texto(bruto.creceita),
-      modeloFiscal: texto(bruto.modelo),
+      ncm: textoDe(bruto.ncm),
+      centroCusto: textoDe(bruto.ccusto),
+      contaDespesa: textoDe(bruto.cdespesa),
+      contaAtivo: textoDe(bruto.cativo),
+      contaReceita: textoDe(bruto.creceita),
+      modeloFiscal: textoDe(bruto.modelo),
     }
   }
 }

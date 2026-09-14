@@ -67,3 +67,42 @@ export interface ProtheusDbTestResult {
   /** Primeira linha do erro, quando falha. */
   erro: string | null
 }
+
+// ---------------------------------------------------------------------------
+// Console de consulta
+// ---------------------------------------------------------------------------
+
+/** Uma tabela do banco do Protheus, para navegar antes de escrever a consulta. */
+export interface TabelaBanco {
+  nome: string
+  esquema: string
+  /**
+   * Estimativa vinda das estatisticas do SQL Server, nao um COUNT.
+   *
+   * Contar de verdade em centenas de tabelas do ERP levaria minutos e ainda
+   * seguraria a listagem. Para escolher a tabela, a ordem de grandeza basta.
+   */
+  registrosEstimados: number
+}
+
+/** Uma coluna, como o dicionario fisico a descreve. */
+export interface ColunaBanco {
+  nome: string
+  tipo: string
+  tamanho: number | null
+  aceitaNulo: boolean
+}
+
+/** Resultado de uma consulta do console. */
+export interface ConsultaSqlResult {
+  ok: boolean
+  /** Colunas na ORDEM do SELECT. Objeto JSON nao garante ordem de chave. */
+  colunas: string[]
+  linhas: Record<string, unknown>[]
+  totalLinhas: number
+  /** true quando o limite cortou o resultado — a consulta tinha mais. */
+  truncado: boolean
+  duracaoMs: number
+  /** Mensagem pronta para a tela quando a consulta e recusada ou falha. */
+  erro: string | null
+}

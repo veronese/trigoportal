@@ -210,6 +210,73 @@ export const PARAMETER_CATALOG: ParameterDefinition[] = [
     type: 'NUMBER',
     defaultValue: '2000',
   },
+  // ------------------------------------------------- Banco do Protheus (ETL)
+  // Conexao DIRETA com o SQL Server do Protheus, em leitura. Fica aqui e nao no
+  // .env porque quem configura e o administrador pela tela, e porque o host
+  // muda conforme o caminho de rede (VPN, IP interno) sem exigir deploy.
+  {
+    key: 'PROTHEUS_DB_HOST',
+    label: 'Servidor do banco',
+    description:
+      'IP ou nome do SQL Server do Protheus, como ele e alcancado a partir DESTE servidor. Nao e o mesmo endereco do REST: o banco costuma so responder pela rede interna ou por VPN.',
+    group: 'Banco Protheus',
+    type: 'STRING',
+    defaultValue: '',
+  },
+  {
+    key: 'PROTHEUS_DB_PORTA',
+    label: 'Porta',
+    description: 'Porta do SQL Server. O padrao da instalacao e 1433.',
+    group: 'Banco Protheus',
+    type: 'NUMBER',
+    defaultValue: '1433',
+  },
+  {
+    key: 'PROTHEUS_DB_BANCO',
+    label: 'Banco de dados',
+    description:
+      'Nome do banco onde estao as tabelas do Protheus. Todas as empresas vivem no mesmo banco: SB1020 e SB1090 sao tabelas dele.',
+    group: 'Banco Protheus',
+    type: 'STRING',
+    defaultValue: '',
+  },
+  {
+    key: 'PROTHEUS_DB_CREDENCIAL',
+    label: 'Credencial do banco',
+    description:
+      'Login e senha do SQL Server. Use um login SOMENTE LEITURA, dedicado ao portal — o ETL le, e login com escrita transforma um erro de consulta em risco para o ERP. O par vai cifrado com AES-256-GCM e a senha nunca e devolvida pela API.',
+    group: 'Banco Protheus',
+    type: 'CREDENTIAL',
+    defaultValue: null,
+    isSecret: true,
+  },
+  {
+    key: 'PROTHEUS_DB_CRIPTOGRAFIA',
+    label: 'Conexao criptografada',
+    description:
+      'Liga o TLS na conexao com o banco. Mantenha ligado: sem ele o login e a senha trafegam em claro na rede.',
+    group: 'Banco Protheus',
+    type: 'BOOLEAN',
+    defaultValue: 'true',
+  },
+  {
+    key: 'PROTHEUS_DB_CERTIFICADO_CONFIAVEL',
+    label: 'Aceitar certificado nao verificado',
+    description:
+      'Necessario quando o SQL Server usa certificado autoassinado, que e o caso da maioria das instalacoes internas. Ligado, a conexao continua criptografada mas nao se verifica quem esta do outro lado.',
+    group: 'Banco Protheus',
+    type: 'BOOLEAN',
+    defaultValue: 'true',
+  },
+  {
+    key: 'PROTHEUS_DB_TIMEOUT_SEGUNDOS',
+    label: 'Timeout da conexao (segundos)',
+    description:
+      'Tempo maximo esperando o banco responder. Host errado ou porta fechada falha aqui em vez de prender a requisicao.',
+    group: 'Banco Protheus',
+    type: 'NUMBER',
+    defaultValue: '15',
+  },
 ]
 
 /** Parametros liberados sem autenticacao, para a tela de login. */

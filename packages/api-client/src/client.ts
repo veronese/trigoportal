@@ -3,6 +3,7 @@ import * as parametersApi from './parameters'
 import * as productsApi from './products'
 import * as databaseApi from './database'
 import * as diagnosticsApi from './diagnostics'
+import * as protheusDbApi from './protheus-db'
 import * as protheusApi from './protheus'
 import * as usersApi from './users'
 import type { HttpConfig } from './http'
@@ -74,6 +75,12 @@ export function createApiClient(config: HttpConfig) {
     protheus: {
       status: () => protheusApi.getProtheusStatus(config),
       testConnection: () => protheusApi.testProtheusConnection(config),
+    },
+
+    // Conexao direta com o banco do Protheus (ETL), em leitura
+    protheusDb: {
+      config: () => protheusDbApi.getProtheusDbConfig(config),
+      testar: () => protheusDbApi.testProtheusDb(config),
     },
   }
 }

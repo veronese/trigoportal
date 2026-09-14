@@ -10,6 +10,7 @@ import { DiagnosticsModule } from './diagnostics/diagnostics.module'
 import { ParametersModule } from './parameters/parameters.module'
 import { PrismaModule } from './prisma/prisma.module'
 import { ProductsModule } from './products/products.module'
+import { ProtheusDbModule } from './protheus-db/protheus-db.module'
 import { ProtheusModule } from './protheus/protheus.module'
 import { UsersModule } from './users/users.module'
 
@@ -27,6 +28,8 @@ import { UsersModule } from './users/users.module'
     DiagnosticsModule,
     // Encapsula o REST do Protheus. Nenhum modulo fala com o ERP direto.
     ProtheusModule,
+    // Conexao direta com o banco do ERP, em leitura, para o ETL.
+    ProtheusDbModule,
     // Cadastro de produtos espelhado do ERP.
     ProductsModule,
     // Modulos novos entram aqui. Padrao: um modulo por dominio de negocio.

@@ -66,6 +66,13 @@ export const NAV_SECTIONS: NavSection[] = [
         permission: 'settings:read',
       },
       {
+        href: '/integracoes/banco-protheus',
+        label: 'Banco do Protheus',
+        description: 'Conexao direta com o SQL Server do ERP, em leitura, para o ETL.',
+        icon: 'database',
+        permission: 'settings:read',
+      },
+      {
         href: '/integracoes/protheus',
         label: 'Protheus',
         description: 'Situacao da conexao com o ERP, teste de autenticacao e carga de cadastros.',

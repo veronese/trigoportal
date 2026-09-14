@@ -29,7 +29,7 @@
 --      SECRET e CREDENTIAL nao poderao ser gravados.
 --
 -- Idempotente: pode rodar novamente sem duplicar objeto nem parametro.
--- Assinatura do conteudo: 2d180ec2e409b7f1
+-- Assinatura do conteudo: 5296cb451a7d6152
 -- ============================================================================
 
 SET XACT_ABORT ON;
@@ -252,7 +252,7 @@ GO
 -- 3. Parametros do Configurador
 -- --------------------------------------------------------------------------
 
--- 18 parametros do Configurador, no padrao de fabrica.
+-- 25 parametros do Configurador, no padrao de fabrica.
 -- Idempotente: so insere o que ainda nao existe.
 MERGE [dbo].[tp_parameters] AS destino
 USING (VALUES
@@ -273,7 +273,14 @@ USING (VALUES
   (N'PRODUTOS_ENDPOINT', N'Rota do endpoint de produtos', N'Caminho do WSRESTFUL zWsProdutos no appserver, relativo a URL base do REST. Mudou o nome do servico no Protheus? E aqui que se ajusta, sem deploy.', N'Carga de produtos', N'STRING', NULL, N'/zWsProdutos/get_all', 0, NULL, SYSUTCDATETIME(), SYSUTCDATETIME()),
   (N'PRODUTOS_EMPRESAS', N'Empresas a carregar', N'Codigos de empresa separados por virgula. Cada um vira uma chamada ao Protheus, lendo a tabela SB1 daquela empresa, e o codigo vai para a coluna EMPORI do produto. Ex: 02,09 le SB1020 e SB1090.', N'Carga de produtos', N'STRING', NULL, N'02,09', 0, NULL, SYSUTCDATETIME(), SYSUTCDATETIME()),
   (N'PRODUTOS_PAGINA_TAMANHO', N'Registros por pagina na carga', N'Quantos produtos o Protheus devolve por chamada. Pagina grande faz menos requisicoes mas ocupa a thread do appserver por mais tempo.', N'Carga de produtos', N'NUMBER', NULL, N'200', 0, NULL, SYSUTCDATETIME(), SYSUTCDATETIME()),
-  (N'PRODUTOS_PAGINAS_MAXIMO', N'Limite de paginas por empresa', N'Trava de seguranca da carga. O endpoint zWsProdutos devolve a pagina 1 quando se pede pagina inexistente, o que sem limite viraria laco infinito. Zero remove a trava.', N'Carga de produtos', N'NUMBER', NULL, N'2000', 0, NULL, SYSUTCDATETIME(), SYSUTCDATETIME())
+  (N'PRODUTOS_PAGINAS_MAXIMO', N'Limite de paginas por empresa', N'Trava de seguranca da carga. O endpoint zWsProdutos devolve a pagina 1 quando se pede pagina inexistente, o que sem limite viraria laco infinito. Zero remove a trava.', N'Carga de produtos', N'NUMBER', NULL, N'2000', 0, NULL, SYSUTCDATETIME(), SYSUTCDATETIME()),
+  (N'PROTHEUS_DB_HOST', N'Servidor do banco', N'IP ou nome do SQL Server do Protheus, como ele e alcancado a partir DESTE servidor. Nao e o mesmo endereco do REST: o banco costuma so responder pela rede interna ou por VPN.', N'Banco Protheus', N'STRING', NULL, N'', 0, NULL, SYSUTCDATETIME(), SYSUTCDATETIME()),
+  (N'PROTHEUS_DB_PORTA', N'Porta', N'Porta do SQL Server. O padrao da instalacao e 1433.', N'Banco Protheus', N'NUMBER', NULL, N'1433', 0, NULL, SYSUTCDATETIME(), SYSUTCDATETIME()),
+  (N'PROTHEUS_DB_BANCO', N'Banco de dados', N'Nome do banco onde estao as tabelas do Protheus. Todas as empresas vivem no mesmo banco: SB1020 e SB1090 sao tabelas dele.', N'Banco Protheus', N'STRING', NULL, N'', 0, NULL, SYSUTCDATETIME(), SYSUTCDATETIME()),
+  (N'PROTHEUS_DB_CREDENCIAL', N'Credencial do banco', N'Login e senha do SQL Server. Use um login SOMENTE LEITURA, dedicado ao portal — o ETL le, e login com escrita transforma um erro de consulta em risco para o ERP. O par vai cifrado com AES-256-GCM e a senha nunca e devolvida pela API.', N'Banco Protheus', N'CREDENTIAL', NULL, NULL, 1, NULL, SYSUTCDATETIME(), SYSUTCDATETIME()),
+  (N'PROTHEUS_DB_CRIPTOGRAFIA', N'Conexao criptografada', N'Liga o TLS na conexao com o banco. Mantenha ligado: sem ele o login e a senha trafegam em claro na rede.', N'Banco Protheus', N'BOOLEAN', NULL, N'true', 0, NULL, SYSUTCDATETIME(), SYSUTCDATETIME()),
+  (N'PROTHEUS_DB_CERTIFICADO_CONFIAVEL', N'Aceitar certificado nao verificado', N'Necessario quando o SQL Server usa certificado autoassinado, que e o caso da maioria das instalacoes internas. Ligado, a conexao continua criptografada mas nao se verifica quem esta do outro lado.', N'Banco Protheus', N'BOOLEAN', NULL, N'true', 0, NULL, SYSUTCDATETIME(), SYSUTCDATETIME()),
+  (N'PROTHEUS_DB_TIMEOUT_SEGUNDOS', N'Timeout da conexao (segundos)', N'Tempo maximo esperando o banco responder. Host errado ou porta fechada falha aqui em vez de prender a requisicao.', N'Banco Protheus', N'NUMBER', NULL, N'15', 0, NULL, SYSUTCDATETIME(), SYSUTCDATETIME())
 ) AS origem ([key], [label], [description], [group_name], [value_type], [current_value], [default_value], [is_secret], [updated_by], [updated_at], [created_at])
   ON destino.[key] = origem.[key]
 WHEN NOT MATCHED THEN

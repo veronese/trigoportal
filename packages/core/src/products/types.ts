@@ -56,6 +56,14 @@ export interface ProductSyncCompanyResult {
   paginas: number
   lidos: number
   gravados: number
+  /**
+   * Registros da origem que colidiram no espelho.
+   *
+   * A chave e (EMPORI, codigo aparado), e a origem pode ter dois registros que
+   * so diferem por enchimento invisivel. O espelho guarda o ultimo; este numero
+   * e o que diz que isso aconteceu.
+   */
+  duplicados?: number
   /** Preenchido quando a empresa falhou; as outras seguem mesmo assim. */
   erro?: string
 }

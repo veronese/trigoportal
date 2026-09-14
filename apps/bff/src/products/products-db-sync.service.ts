@@ -102,11 +102,28 @@ export class ProductsDbSyncService {
     tamanho: number,
   ): Promise<void> {
     const sincronizadoEm = new Date()
+    // Dois registros da origem podem virar um so no espelho: a chave e o codigo
+    // APARADO, e na SB1090 ha codigos que so diferem por espaco nao separavel
+    // (byte 160) no lugar de espaco comum (32). Unificar e o certo — e o mesmo
+    // produto — mas em silencio ninguem descobre que ha sujeira no cadastro.
+    const vistos = new Set<string>()
 
     const resumo = await this.db.percorrerProdutos(parcial.empresa, tamanho, async (linhas) => {
       const itens = linhas
         .map((linha) => this.converter(linha))
         .filter((item): item is ZwsProduto => item !== null)
+
+      for (const item of itens) {
+        if (vistos.has(item.codigo)) {
+          this.logger.warn(
+            `Empresa ${parcial.empresa}: o codigo "${item.codigo}" aparece mais de uma vez na origem. ` +
+              'O espelho guarda o ultimo lido. Confira o cadastro: codigos que so diferem por ' +
+              'espaco nao separavel sao a causa mais comum.',
+          )
+          parcial.duplicados = (parcial.duplicados ?? 0) + 1
+        }
+        vistos.add(item.codigo)
+      }
 
       if (itens.length !== linhas.length) {
         this.logger.warn(

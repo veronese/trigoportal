@@ -67,6 +67,11 @@ async function main(): Promise<void> {
         `  ${e.empresa.padEnd(9)}${(e.empori || '(vazio)').padEnd(8)}${e.sourceTable.padEnd(10)}` +
           `${String(e.paginas).padStart(7)}${String(e.lidos).padStart(8)}${String(e.gravados).padStart(10)}`,
       )
+      if (e.duplicados) {
+        console.log(
+          `           ${e.duplicados} codigo(s) colidiram no espelho e ficaram com o ultimo lido.`,
+        )
+      }
       if (e.erro) console.log(`           erro: ${e.erro}`)
     }
     console.log('  ' + '-'.repeat(54))

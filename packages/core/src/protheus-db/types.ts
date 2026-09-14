@@ -77,12 +77,16 @@ export interface TabelaBanco {
   nome: string
   esquema: string
   /**
-   * Estimativa vinda das estatisticas do SQL Server, nao um COUNT.
+   * Estimativa vinda do catalogo, nao um COUNT.
    *
    * Contar de verdade em centenas de tabelas do ERP levaria minutos e ainda
    * seguraria a listagem. Para escolher a tabela, a ordem de grandeza basta.
+   *
+   * NULO quando o login nao tem permissao de ler as estatisticas. Um login
+   * somente leitura costuma nao ter, e a lista de tabelas vale por si — por
+   * isso a contagem e opcional e nao derruba a listagem.
    */
-  registrosEstimados: number
+  registrosEstimados: number | null
 }
 
 /** Uma coluna, como o dicionario fisico a descreve. */

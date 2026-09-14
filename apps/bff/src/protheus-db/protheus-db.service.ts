@@ -16,6 +16,16 @@ import {
 } from '@trigo/core'
 import { ParametersService } from '../parameters/parameters.service'
 
+/**
+ * Teto da listagem de tabelas.
+ *
+ * O banco do Protheus tem 59.015 tabelas. Devolver todas trava o navegador
+ * antes de a pessoa conseguir ler a primeira — e quem procura uma tabela sabe
+ * ao menos o comeco do nome. O filtro e a ferramenta; a lista sem filtro e so
+ * um ponto de partida.
+ */
+const TETO_TABELAS = 300
+
 /** O que o BFF precisa para abrir a conexao. Fica no processo, nunca sai. */
 interface ConexaoProtheusDb {
   host: string
@@ -106,10 +116,14 @@ export class ProtheusDbService {
   /**
    * Abre uma conexao, roda o trabalho e fecha.
    *
-   * SEM POOL de proposito, por enquanto: o portal ainda nao tem carga que
-   * justifique, e conexao aberta contra o banco do ERP e coisa que se abre
-   * quando precisa. Se a carga passar a ser frequente, e aqui que um pool
-   * entra — em um lugar so.
+   * UMA CONEXAO POR CHAMADA, para operacao avulsa: consulta do console, teste,
+   * listagem de tabelas. Conexao contra o banco do ERP e coisa que se abre
+   * quando precisa.
+   *
+   * Para PERCORRER, use percorrerProdutos(). Paginar chamando este metodo uma
+   * vez por pagina custou uma carga: 37 handshakes TCP+TLS contra um servidor
+   * remoto, e a carga da empresa 09 morreu na quinta pagina com timeout de
+   * conexao depois de 8.000 dos 41.861 registros.
    */
   private async comConexao<T>(trabalho: (pool: sql.ConnectionPool) => Promise<T>): Promise<T> {
     const c = await this.conexao()
@@ -182,6 +196,67 @@ export class ProtheusDbService {
         `)
 
       return resultado.recordset
+    })
+  }
+
+  /**
+   * Percorre o cadastro de produtos de uma empresa em UMA conexao so.
+   *
+   * POR QUE NAO E `lerProdutos` EM LACO: era, e nao funcionou. Abrir e fechar
+   * conexao por pagina fez 37 handshakes contra o banco remoto, e a carga da
+   * empresa 09 caiu com timeout na quinta pagina. Aqui a conexao abre uma vez,
+   * pagina inteira por dentro, e fecha no fim.
+   *
+   * Entrega por callback em vez de devolver tudo: 41.861 produtos com 14 campos
+   * na memoria do BFF antes de gravar qualquer um seria desperdicio, e o
+   * chamador ja grava pagina a pagina.
+   */
+  async percorrerProdutos(
+    empresa: string,
+    tamanho: number,
+    aoLer: (linhas: Record<string, unknown>[]) => Promise<void>,
+  ): Promise<{ lidos: number; paginas: number }> {
+    const tabela = this.tabelaProdutos(empresa)
+    const passo = Math.max(1, Math.min(5000, Math.trunc(tamanho)))
+
+    return this.comConexao(async (pool) => {
+      await this.exigirTabela(pool, tabela)
+
+      let pulo = 0
+      let paginas = 0
+
+      for (;;) {
+        const r = await pool
+          .request()
+          .input('pulo', sql.Int, pulo)
+          .input('tamanho', sql.Int, passo)
+          .query<Record<string, unknown>>(`
+            SELECT
+              TAB.B1_COD, TAB.B1_DESC, TAB.B1_TIPO, TAB.B1_UM,
+              TAB.B1_LOCPAD, TAB.B1_GRUPO, TAB.B1_MSBLQL, TAB.B1_ATIVO,
+              TAB.B1_POSIPI, TAB.B1_XCTACUS, TAB.B1_XCTADES, TAB.B1_XCONTA,
+              TAB.B1_CONTA, TAB.B1_MODELO
+            FROM [${tabela}] TAB WITH (NOLOCK)
+            WHERE TAB.D_E_L_E_T_ = ' '
+            ORDER BY TAB.R_E_C_N_O_
+            OFFSET @pulo ROWS FETCH NEXT @tamanho ROWS ONLY
+          `)
+
+        const linhas = r.recordset
+        // Pagina vazia e o fim. Nao ha COUNT previo de proposito: o total
+        // poderia mudar entre a contagem e a leitura, e a pagina vazia e a
+        // condicao de parada que nao depende disso.
+        if (linhas.length === 0) break
+
+        await aoLer(linhas)
+
+        paginas++
+        pulo += linhas.length
+
+        if (linhas.length < passo) break
+      }
+
+      return { lidos: pulo, paginas }
     })
   }
 
@@ -395,29 +470,66 @@ export class ProtheusDbService {
    */
   async listarTabelas(busca?: string): Promise<TabelaBanco[]> {
     const filtro = (busca ?? '').trim()
+    const like = filtro === '' ? null : `%${filtro}%`
+    const prefixo = filtro === '' ? null : `${filtro}%`
 
     return this.comConexao(async (pool) => {
+      // PRIMEIRO com a contagem. `sys.partitions` e catalogo, e nao a DMV
+      // dm_db_partition_stats, que exige VIEW DATABASE STATE — permissao que um
+      // login somente leitura normalmente nao tem, e cuja falta derrubava a
+      // listagem inteira em vez de so a contagem.
+      try {
+        const r = await pool
+          .request()
+          .input('busca', sql.VarChar(128), like)
+          .input('prefixo', sql.VarChar(128), prefixo)
+          .input('teto', sql.Int, TETO_TABELAS)
+          .query<{ nome: string; esquema: string; registros: number }>(`
+            SELECT TOP (@teto)
+              t.name AS nome,
+              s.name AS esquema,
+              CONVERT(int, ISNULL(SUM(p.rows), 0)) AS registros
+            FROM sys.tables t
+            JOIN sys.schemas s ON s.schema_id = t.schema_id
+            LEFT JOIN sys.partitions p
+                   ON p.object_id = t.object_id AND p.index_id IN (0, 1)
+            WHERE (@busca IS NULL OR t.name LIKE @busca)
+            GROUP BY t.name, s.name
+            -- Prefixo primeiro: quem digita "SB1" quer SB1010 antes de CSB100.
+            ORDER BY CASE WHEN @prefixo IS NULL OR t.name LIKE @prefixo THEN 0 ELSE 1 END, t.name
+          `)
+
+        return r.recordset.map((linha) => ({
+          nome: linha.nome,
+          esquema: linha.esquema,
+          registrosEstimados: linha.registros,
+        }))
+      } catch (error) {
+        this.logger.warn(
+          'Nao foi possivel estimar o tamanho das tabelas (o login nao le as estatisticas). ' +
+            `Listando sem contagem. Detalhe: ${error instanceof Error ? error.message : String(error)}`,
+        )
+      }
+
+      // A lista de tabelas vale por si: sem ela a tela fica vazia e a pessoa
+      // nao tem por onde comecar. A contagem e conveniencia.
       const r = await pool
         .request()
-        .input('busca', sql.VarChar(128), filtro === '' ? null : `%${filtro}%`)
-        .query<{ nome: string; esquema: string; registros: number }>(`
-          SELECT
-            t.name                       AS nome,
-            s.name                       AS esquema,
-            CONVERT(int, ISNULL(SUM(p.row_count), 0)) AS registros
+        .input('busca', sql.VarChar(128), like)
+        .input('prefixo', sql.VarChar(128), prefixo)
+        .input('teto', sql.Int, TETO_TABELAS)
+        .query<{ nome: string; esquema: string }>(`
+          SELECT TOP (@teto) t.name AS nome, s.name AS esquema
           FROM sys.tables t
           JOIN sys.schemas s ON s.schema_id = t.schema_id
-          LEFT JOIN sys.dm_db_partition_stats p
-                 ON p.object_id = t.object_id AND p.index_id IN (0, 1)
           WHERE (@busca IS NULL OR t.name LIKE @busca)
-          GROUP BY t.name, s.name
-          ORDER BY t.name
+          ORDER BY CASE WHEN @prefixo IS NULL OR t.name LIKE @prefixo THEN 0 ELSE 1 END, t.name
         `)
 
       return r.recordset.map((linha) => ({
         nome: linha.nome,
         esquema: linha.esquema,
-        registrosEstimados: linha.registros,
+        registrosEstimados: null,
       }))
     })
   }

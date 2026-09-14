@@ -91,26 +91,19 @@ export class ProductsDbSyncService {
     return resultado
   }
 
-  /** Pagina uma empresa ate o fim, acumulando o progresso em `parcial`. */
+  /**
+   * Percorre a empresa inteira em UMA conexao, gravando pagina a pagina.
+   *
+   * A gravacao acontece DENTRO da travessia: esperar o fim para gravar tudo
+   * significaria perder 41 mil produtos ja lidos se a ultima pagina falhasse.
+   */
   private async carregarEmpresa(
     parcial: ProductSyncCompanyResult,
     tamanho: number,
   ): Promise<void> {
     const sincronizadoEm = new Date()
-    const total = await this.db.contarProdutos(parcial.empresa)
-    let pulo = 0
 
-    while (pulo < total) {
-      const linhas = await this.db.lerProdutos({
-        empresa: parcial.empresa,
-        pulo,
-        tamanho,
-      })
-
-      // Pagina vazia antes do total encerra o laco. Sem isso, uma contagem que
-      // mudou entre o COUNT e a leitura viraria laco infinito.
-      if (linhas.length === 0) break
-
+    const resumo = await this.db.percorrerProdutos(parcial.empresa, tamanho, async (linhas) => {
       const itens = linhas
         .map((linha) => this.converter(linha))
         .filter((item): item is ZwsProduto => item !== null)
@@ -121,12 +114,11 @@ export class ProductsDbSyncService {
         )
       }
 
-      parcial.paginas++
-      parcial.lidos += linhas.length
       parcial.gravados += await this.sync.espelhar(parcial.empresa, itens, sincronizadoEm)
+    })
 
-      pulo += linhas.length
-    }
+    parcial.lidos = resumo.lidos
+    parcial.paginas = resumo.paginas
   }
 
   /**

@@ -137,7 +137,9 @@ export default function ConsultaSqlPage() {
                         {t.nome}
                       </span>
                       <span className="text-xs text-ink-400">
-                        ~{t.registrosEstimados.toLocaleString('pt-BR')} registros
+                        {t.registrosEstimados === null
+                          ? 'tamanho indisponivel'
+                          : `~${t.registrosEstimados.toLocaleString('pt-BR')} registros`}
                       </span>
                     </button>
                     <Button variant="ghost" onClick={() => inserir(t.nome)}>
@@ -281,6 +283,11 @@ function formatar(valor: unknown): string {
   if (valor === null || valor === undefined) return 'NULL'
   if (valor instanceof Date) return valor.toISOString()
   if (typeof valor === 'object') return JSON.stringify(valor)
-  if (typeof valor === 'string') return valor.trimEnd() === '' && valor !== '' ? '(espacos)' : valor
+  if (typeof valor === 'string') {
+    // CHAR do Protheus vem com enchimento a direita. Mostrar "460016" e nao
+    // "460016            " — mas campo so de espacos vira marcador, senao
+    // pareceria vazio e vazio e outra coisa.
+    return valor.trimEnd() === '' && valor !== '' ? '(espacos)' : valor.trimEnd()
+  }
   return String(valor)
 }

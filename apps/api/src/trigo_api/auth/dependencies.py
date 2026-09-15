@@ -5,6 +5,7 @@ por rota. Rota sem ``Depends(usuario_atual)`` é rota pública — e isso fica
 visível na assinatura, em vez de depender de um decorador de exceção.
 """
 
+from collections.abc import Callable
 from typing import Annotated
 
 from fastapi import Cookie, Depends, Header
@@ -14,6 +15,7 @@ from trigo_api.auth.service import AuthService
 from trigo_api.config import Settings, obter_settings
 from trigo_api.db import obter_sessao
 from trigo_api.errors import ApiError
+from trigo_api.permissoes import ROTULOS, pode
 from trigo_api.schemas.auth import SessionUser
 from trigo_api.security import jwt as token_jwt
 
@@ -74,3 +76,24 @@ def usuario_com_senha_definida(
             code="PASSWORD_CHANGE_REQUIRED",
         )
     return usuario
+
+
+def exigir(permissao: str) -> Callable[[SessionUser], SessionUser]:
+    """Dependência que exige uma permissão.
+
+    Usada como ``Depends(exigir("settings:write"))`` na rota. A permissão fica
+    na assinatura, ao lado do que a rota faz — e não num decorador distante que
+    se esquece de aplicar.
+    """
+
+    def verificar(
+        usuario: Annotated[SessionUser, Depends(usuario_com_senha_definida)],
+    ) -> SessionUser:
+        if not pode(usuario.role, permissao):
+            raise ApiError(
+                403,
+                f"Seu perfil nao tem a permissao necessaria ({ROTULOS.get(permissao, permissao)}).",
+            )
+        return usuario
+
+    return verificar

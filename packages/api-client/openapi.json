@@ -128,6 +128,315 @@
         }
       }
     },
+    "/api/parameters": {
+      "get": {
+        "tags": [
+          "parametros"
+        ],
+        "summary": "Listar",
+        "operationId": "listar_api_parameters_get",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "tp_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Tp Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ParametroPublico"
+                  },
+                  "title": "Response Listar Api Parameters Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/parameters/{chave}": {
+      "put": {
+        "tags": [
+          "parametros"
+        ],
+        "summary": "Atualizar",
+        "operationId": "atualizar_api_parameters__chave__put",
+        "parameters": [
+          {
+            "name": "chave",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Chave"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "tp_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Tp Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AtualizarParametroInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ParametroPublico"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "parametros"
+        ],
+        "summary": "Restaurar",
+        "operationId": "restaurar_api_parameters__chave__delete",
+        "parameters": [
+          {
+            "name": "chave",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Chave"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "tp_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Tp Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ParametroPublico"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/parameters/{chave}/credencial": {
+      "put": {
+        "tags": [
+          "parametros"
+        ],
+        "summary": "Atualizar Credencial",
+        "operationId": "atualizar_credencial_api_parameters__chave__credencial_put",
+        "parameters": [
+          {
+            "name": "chave",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Chave"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "tp_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Tp Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AtualizarCredencialInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ParametroPublico"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/health": {
       "get": {
         "tags": [
@@ -156,6 +465,40 @@
   },
   "components": {
     "schemas": {
+      "AtualizarCredencialInput": {
+        "properties": {
+          "usuario": {
+            "type": "string",
+            "maxLength": 320,
+            "minLength": 1,
+            "title": "Usuario"
+          },
+          "senha": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Senha"
+          }
+        },
+        "type": "object",
+        "required": [
+          "usuario",
+          "senha"
+        ],
+        "title": "AtualizarCredencialInput"
+      },
+      "AtualizarParametroInput": {
+        "properties": {
+          "value": {
+            "type": "string",
+            "title": "Value"
+          }
+        },
+        "type": "object",
+        "required": [
+          "value"
+        ],
+        "title": "AtualizarParametroInput"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -191,6 +534,110 @@
         ],
         "title": "LoginInput",
         "description": "Credenciais do login.\n\nO e-mail NÃO passa por validação de formato aqui, e isso é deliberado. No\nlogin ele é apenas a chave de busca: recusar antes de consultar não protege\nnada — a senha ainda precisaria conferir — e o validador do Pydantic é mais\nrígido que o do backend anterior. Ele recusa domínio de uso interno\n(``.local``, por exemplo), que o ``zod.email()`` aceitava. Manter o rigor\naqui trancaria para fora qualquer conta em domínio interno já cadastrada.\n\nFormato de e-mail se valida no CADASTRO do usuário, onde recusar é barato e\na pessoa pode corrigir. Ver ``CriarUsuarioInput``."
+      },
+      "ParametroPublico": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "group": {
+            "type": "string",
+            "title": "Group"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          },
+          "defaultValue": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Defaultvalue"
+          },
+          "isSecret": {
+            "type": "boolean",
+            "title": "Issecret"
+          },
+          "temValor": {
+            "type": "boolean",
+            "title": "Temvalor"
+          },
+          "usuario": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Usuario"
+          },
+          "updatedBy": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updatedby"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updatedat"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "label",
+          "description",
+          "group",
+          "type",
+          "value",
+          "defaultValue",
+          "isSecret",
+          "temValor",
+          "updatedBy",
+          "updatedAt"
+        ],
+        "title": "ParametroPublico",
+        "description": "Um parâmetro como a tela o vê.\n\nNÃO TEM O VALOR DO SEGREDO. Para tipo SECRET e CREDENTIAL, ``value`` volta\nnulo e ``temValor`` diz se algo está guardado. Mascarar seria pior que\nomitir: sugere que existe um jeito de ler pela API."
       },
       "SessionResponse": {
         "properties": {

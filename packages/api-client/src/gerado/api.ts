@@ -61,6 +61,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/parameters": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Listar */
+        get: operations["listar_api_parameters_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/parameters/{chave}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Atualizar */
+        put: operations["atualizar_api_parameters__chave__put"];
+        post?: never;
+        /** Restaurar */
+        delete: operations["restaurar_api_parameters__chave__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/parameters/{chave}/credencial": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Atualizar Credencial */
+        put: operations["atualizar_credencial_api_parameters__chave__credencial_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/health": {
         parameters: {
             query?: never;
@@ -82,6 +134,18 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AtualizarCredencialInput */
+        AtualizarCredencialInput: {
+            /** Usuario */
+            usuario: string;
+            /** Senha */
+            senha: string;
+        };
+        /** AtualizarParametroInput */
+        AtualizarParametroInput: {
+            /** Value */
+            value: string;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -109,6 +173,43 @@ export interface components {
              * @description Senha em texto, sobre TLS
              */
             password: string;
+        };
+        /**
+         * ParametroPublico
+         * @description Um parâmetro como a tela o vê.
+         *
+         *     NÃO TEM O VALOR DO SEGREDO. Para tipo SECRET e CREDENTIAL, ``value`` volta
+         *     nulo e ``temValor`` diz se algo está guardado. Mascarar seria pior que
+         *     omitir: sugere que existe um jeito de ler pela API.
+         */
+        ParametroPublico: {
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+            /** Description */
+            description: string | null;
+            /** Group */
+            group: string;
+            /** Type */
+            type: string;
+            /** Value */
+            value: string | null;
+            /** Defaultvalue */
+            defaultValue: string | null;
+            /** Issecret */
+            isSecret: boolean;
+            /** Temvalor */
+            temValor: boolean;
+            /** Usuario */
+            usuario?: string | null;
+            /** Updatedby */
+            updatedBy: string | null;
+            /**
+             * Updatedat
+             * Format: date-time
+             */
+            updatedAt: string;
         };
         /** SessionResponse */
         SessionResponse: {
@@ -220,6 +321,152 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SessionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    listar_api_parameters_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: {
+                tp_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ParametroPublico"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    atualizar_api_parameters__chave__put: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                chave: string;
+            };
+            cookie?: {
+                tp_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AtualizarParametroInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ParametroPublico"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    restaurar_api_parameters__chave__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                chave: string;
+            };
+            cookie?: {
+                tp_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ParametroPublico"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    atualizar_credencial_api_parameters__chave__credencial_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                chave: string;
+            };
+            cookie?: {
+                tp_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AtualizarCredencialInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ParametroPublico"];
                 };
             };
             /** @description Validation Error */

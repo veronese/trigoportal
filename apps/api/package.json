@@ -11,6 +11,8 @@
     "openapi": "uv run python scripts/gerar_openapi.py ../../packages/api-client/openapi.json",
     "db:migrar": "uv run alembic upgrade head",
     "db:revisao": "uv run alembic revision --autogenerate -m",
-    "db:estado": "uv run alembic current"
+    "db:estado": "uv run alembic current",
+    "parametros": "uv run python scripts/administrar.py parametros",
+    "admin": "uv run python scripts/administrar.py admin"
   }
 }

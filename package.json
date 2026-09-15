@@ -13,8 +13,8 @@
     "dev:legado": "pnpm --filter @trigo/bff dev",
     "build": "pnpm build:packages && pnpm --filter @trigo/web build",
     "typecheck": "pnpm -r typecheck",
-    "db:studio": "pnpm --filter @trigo/bff db:studio",
-    "db:seed": "pnpm --filter @trigo/bff db:seed"
+    "parametros": "pnpm --filter @trigo/api parametros",
+    "db:studio:legado": "pnpm --filter @trigo/bff db:studio"
   },
   "devDependencies": {
     "typescript": "^5.9.2"

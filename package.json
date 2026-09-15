@@ -6,10 +6,12 @@
     "node": ">=22"
   },
   "scripts": {
-    "bootstrap": "pnpm install && pnpm build:packages && pnpm --filter @trigo/bff db:push && pnpm --filter @trigo/bff db:seed",
+    "bootstrap": "pnpm install && pnpm build:packages",
     "build:packages": "pnpm --filter @trigo/core build && pnpm --filter @trigo/api-client build",
-    "dev": "pnpm -r --parallel dev",
-    "build": "pnpm build:packages && pnpm --filter @trigo/bff build && pnpm --filter @trigo/web build",
+    "dev": "pnpm -r --parallel --filter=!@trigo/bff dev",
+    "dev:api": "pnpm --filter @trigo/api dev",
+    "dev:legado": "pnpm --filter @trigo/bff dev",
+    "build": "pnpm build:packages && pnpm --filter @trigo/web build",
     "typecheck": "pnpm -r typecheck",
     "db:studio": "pnpm --filter @trigo/bff db:studio",
     "db:seed": "pnpm --filter @trigo/bff db:seed"

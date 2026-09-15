@@ -1,0 +1,16 @@
+{
+  "name": "@trigo/api",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "uv run uvicorn trigo_api.main:app --reload --host 127.0.0.1 --port 3334 --app-dir src",
+    "start": "uv run uvicorn trigo_api.main:app --host 0.0.0.0 --port 3334 --app-dir src",
+    "typecheck": "uv run mypy src",
+    "lint": "uv run ruff check src tests",
+    "test": "uv run pytest -q",
+    "openapi": "uv run python scripts/gerar_openapi.py ../../packages/api-client/openapi.json",
+    "db:migrar": "uv run alembic upgrade head",
+    "db:revisao": "uv run alembic revision --autogenerate -m",
+    "db:estado": "uv run alembic current"
+  }
+}

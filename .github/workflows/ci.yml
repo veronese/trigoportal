@@ -85,6 +85,65 @@ jobs:
       # e passo sempre vermelho ensina a ignorar o CI. O diagnostico e ferramenta
       # de servidor, nao de pipeline.
 
+  # Backend Python. Job proprio, e nao um passo do job de Node: as duas pilhas
+  # tem cache, versao e ferramenta diferentes, e misturar faz uma falha de lint
+  # do Python parecer falha de build do front.
+  api:
+    runs-on: ubuntu-latest
+
+    env:
+      # O banco do CI e um SQLite descartavel. A chave de cifragem e de mentira
+      # e existe so para os testes que exercitam o ciclo de cifragem — nenhum
+      # dado real passa por aqui.
+      DATABASE_URL: 'sqlite+pysqlite:///./ci.db'
+      JWT_SECRET: 'ci-nao-e-segredo-de-verdade'
+      PARAMETER_ENCRYPTION_KEY: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+      AMBIENTE: 'development'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar o uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Instalar dependencias
+        working-directory: apps/api
+        run: uv sync --frozen
+
+      - name: Lint
+        working-directory: apps/api
+        run: uv run ruff check src tests
+
+      - name: Verificar tipos
+        working-directory: apps/api
+        # `strict` e bloqueante de proposito: a migracao para Python so vale a
+        # pena se a tipagem for verificada, e anotacao opcional nao verificada
+        # nao substitui o que o tsc fazia.
+        run: uv run mypy src
+
+      - name: Testes
+        working-directory: apps/api
+        # Os testes de compatibilidade com o backend Node estao aqui: hash de
+        # senha, formato da cifra e formato de data. Se algum quebrar, a
+        # migracao passou a exigir reset de senha ou perdeu credencial.
+        run: uv run pytest -q
+
+      - name: Contrato em dia
+        working-directory: apps/api
+        # O openapi.json versionado alimenta o cliente TypeScript. Se ele ficar
+        # para tras, o front compila contra um contrato que a API nao cumpre
+        # mais — e o erro so aparece em produçao.
+        run: |
+          uv run python scripts/gerar_openapi.py /tmp/openapi-gerado.json
+          if ! diff -q /tmp/openapi-gerado.json ../../packages/api-client/openapi.json; then
+            echo "::error::O openapi.json esta desatualizado. Rode: pnpm --filter @trigo/api openapi"
+            diff /tmp/openapi-gerado.json ../../packages/api-client/openapi.json | head -40
+            exit 1
+          fi
+          echo "Contrato em dia."
+
   segredos:
     runs-on: ubuntu-latest
     steps:

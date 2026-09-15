@@ -31,7 +31,7 @@ pnpm dev
 ```
 
 - Web: http://localhost:3000
-- BFF: http://localhost:3333/api (health check em `/api/health`)
+- API: http://localhost:3334/api (health check em `/api/health`, docs em `/api/docs`)
 
 **Acesso inicial** (definido em `apps/bff/.env`):
 

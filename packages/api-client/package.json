@@ -5,6 +5,7 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
+    "gerar-tipos": "openapi-typescript openapi.json -o src/gerado/api.ts",
     "build": "tsc -p tsconfig.json",
     "dev": "tsc -p tsconfig.json --watch --preserveWatchOutput",
     "typecheck": "tsc -p tsconfig.json --noEmit"
@@ -13,6 +14,7 @@
     "@trigo/core": "workspace:*"
   },
   "devDependencies": {
+    "openapi-typescript": "^7.4.4",
     "typescript": "^5.9.2"
   }
 }

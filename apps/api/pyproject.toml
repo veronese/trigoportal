@@ -32,6 +32,14 @@ target-version = "py313"
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "UP", "B", "SIM"]
 
+# O pyodbc distribui pyodbc.pyi mas NAO o marcador py.typed que o PEP 561
+# exige, entao o mypy ignora as anotacoes dele. A excecao e pontual e so para
+# a importacao: o strict continua valendo em todo o resto, inclusive no codigo
+# que usa a biblioteca.
+[[tool.mypy.overrides]]
+module = ["pyodbc"]
+ignore_missing_imports = true
+
 [tool.mypy]
 python_version = "3.13"
 # A migracao existe para ter tipagem util. Anotacao opcional nao verificada

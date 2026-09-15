@@ -9,6 +9,7 @@ from trigo_api.auth.router import router as auth_router
 from trigo_api.config import obter_settings
 from trigo_api.errors import registrar_tratadores
 from trigo_api.parametros.router import router as parametros_router
+from trigo_api.protheus_db.router import router as protheus_db_router
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)-8s %(name)s: %(message)s")
 
@@ -38,6 +39,7 @@ def criar_app() -> FastAPI:
     registrar_tratadores(app)
     app.include_router(auth_router, prefix="/api")
     app.include_router(parametros_router, prefix="/api")
+    app.include_router(protheus_db_router, prefix="/api")
 
     @app.get("/api/health", tags=["infra"])
     def health() -> dict[str, str]:

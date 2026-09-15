@@ -113,6 +113,84 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/protheus-db/config": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Config
+         * @description O que está configurado. Nunca devolve a senha, só se ela existe.
+         */
+        get: operations["config_api_protheus_db_config_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/protheus-db/tabelas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Tabelas */
+        get: operations["tabelas_api_protheus_db_tabelas_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/protheus-db/tabelas/{nome}/colunas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Colunas */
+        get: operations["colunas_api_protheus_db_tabelas__nome__colunas_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/protheus-db/consultar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Consultar
+         * @description Executa a consulta escrita no console.
+         *
+         *     POST e não GET, apesar de ser leitura: o SQL vai no corpo. Em query string
+         *     ele apareceria no log do servidor e no histórico do navegador, e consulta
+         *     ao ERP pode conter código de cliente, valor e nome.
+         */
+        post: operations["consultar_api_protheus_db_consultar_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/health": {
         parameters: {
             query?: never;
@@ -145,6 +223,49 @@ export interface components {
         AtualizarParametroInput: {
             /** Value */
             value: string;
+        };
+        /**
+         * ColunaBanco
+         * @description Uma coluna, como o dicionário físico a descreve.
+         */
+        ColunaBanco: {
+            /** Nome */
+            nome: string;
+            /** Tipo */
+            tipo: string;
+            /** Tamanho */
+            tamanho: number | null;
+            /** Aceitanulo */
+            aceitaNulo: boolean;
+        };
+        /** ConsultaSqlInput */
+        ConsultaSqlInput: {
+            /** Sql */
+            sql: string;
+            /**
+             * Limite
+             * @default 500
+             */
+            limite: number;
+        };
+        /** ConsultaSqlResult */
+        ConsultaSqlResult: {
+            /** Ok */
+            ok: boolean;
+            /** Colunas */
+            colunas: string[];
+            /** Linhas */
+            linhas: {
+                [key: string]: unknown;
+            }[];
+            /** Totallinhas */
+            totalLinhas: number;
+            /** Truncado */
+            truncado: boolean;
+            /** Duracaoms */
+            duracaoMs: number;
+            /** Erro */
+            erro: string | null;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -211,6 +332,32 @@ export interface components {
              */
             updatedAt: string;
         };
+        /**
+         * ProtheusDbConfig
+         * @description O que está configurado. A senha nunca aparece aqui, nem mascarada.
+         */
+        ProtheusDbConfig: {
+            /** Host */
+            host: string;
+            /** Porta */
+            porta: number;
+            /** Banco */
+            banco: string;
+            /** Usuario */
+            usuario: string;
+            /** Senhaconfigurada */
+            senhaConfigurada: boolean;
+            /** Criptografia */
+            criptografia: boolean;
+            /** Certificadoconfiavel */
+            certificadoConfiavel: boolean;
+            /** Timeoutsegundos */
+            timeoutSegundos: number;
+            /** Configurado */
+            configurado: boolean;
+            /** Pendencias */
+            pendencias: string[];
+        };
         /** SessionResponse */
         SessionResponse: {
             user: components["schemas"]["SessionUser"];
@@ -227,6 +374,18 @@ export interface components {
             role: string;
             /** Mustchangepassword */
             mustChangePassword: boolean;
+        };
+        /**
+         * TabelaBanco
+         * @description Uma tabela do banco, para navegar antes de escrever a consulta.
+         */
+        TabelaBanco: {
+            /** Nome */
+            nome: string;
+            /** Esquema */
+            esquema: string;
+            /** Registrosestimados */
+            registrosEstimados: number | null;
         };
         /** ValidationError */
         ValidationError: {
@@ -467,6 +626,146 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ParametroPublico"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    config_api_protheus_db_config_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: {
+                tp_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProtheusDbConfig"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    tabelas_api_protheus_db_tabelas_get: {
+        parameters: {
+            query?: {
+                busca?: string | null;
+            };
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: {
+                tp_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TabelaBanco"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    colunas_api_protheus_db_tabelas__nome__colunas_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                nome: string;
+            };
+            cookie?: {
+                tp_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ColunaBanco"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    consultar_api_protheus_db_consultar_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: {
+                tp_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConsultaSqlInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsultaSqlResult"];
                 };
             };
             /** @description Validation Error */

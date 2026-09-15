@@ -437,6 +437,311 @@
         }
       }
     },
+    "/api/protheus-db/config": {
+      "get": {
+        "tags": [
+          "protheus-db"
+        ],
+        "summary": "Config",
+        "description": "O que está configurado. Nunca devolve a senha, só se ela existe.",
+        "operationId": "config_api_protheus_db_config_get",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "tp_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Tp Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtheusDbConfig"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/protheus-db/tabelas": {
+      "get": {
+        "tags": [
+          "protheus-db"
+        ],
+        "summary": "Tabelas",
+        "operationId": "tabelas_api_protheus_db_tabelas_get",
+        "parameters": [
+          {
+            "name": "busca",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Busca"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "tp_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Tp Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TabelaBanco"
+                  },
+                  "title": "Response Tabelas Api Protheus Db Tabelas Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/protheus-db/tabelas/{nome}/colunas": {
+      "get": {
+        "tags": [
+          "protheus-db"
+        ],
+        "summary": "Colunas",
+        "operationId": "colunas_api_protheus_db_tabelas__nome__colunas_get",
+        "parameters": [
+          {
+            "name": "nome",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Nome"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "tp_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Tp Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ColunaBanco"
+                  },
+                  "title": "Response Colunas Api Protheus Db Tabelas  Nome  Colunas Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/protheus-db/consultar": {
+      "post": {
+        "tags": [
+          "protheus-db"
+        ],
+        "summary": "Consultar",
+        "description": "Executa a consulta escrita no console.\n\nPOST e não GET, apesar de ser leitura: o SQL vai no corpo. Em query string\nele apareceria no log do servidor e no histórico do navegador, e consulta\nao ERP pode conter código de cliente, valor e nome.",
+        "operationId": "consultar_api_protheus_db_consultar_post",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "tp_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Tp Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConsultaSqlInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsultaSqlResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/health": {
       "get": {
         "tags": [
@@ -498,6 +803,121 @@
           "value"
         ],
         "title": "AtualizarParametroInput"
+      },
+      "ColunaBanco": {
+        "properties": {
+          "nome": {
+            "type": "string",
+            "title": "Nome"
+          },
+          "tipo": {
+            "type": "string",
+            "title": "Tipo"
+          },
+          "tamanho": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tamanho"
+          },
+          "aceitaNulo": {
+            "type": "boolean",
+            "title": "Aceitanulo"
+          }
+        },
+        "type": "object",
+        "required": [
+          "nome",
+          "tipo",
+          "tamanho",
+          "aceitaNulo"
+        ],
+        "title": "ColunaBanco",
+        "description": "Uma coluna, como o dicionário físico a descreve."
+      },
+      "ConsultaSqlInput": {
+        "properties": {
+          "sql": {
+            "type": "string",
+            "maxLength": 20000,
+            "minLength": 1,
+            "title": "Sql"
+          },
+          "limite": {
+            "type": "integer",
+            "maximum": 10000.0,
+            "minimum": 1.0,
+            "title": "Limite",
+            "default": 500
+          }
+        },
+        "type": "object",
+        "required": [
+          "sql"
+        ],
+        "title": "ConsultaSqlInput"
+      },
+      "ConsultaSqlResult": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok"
+          },
+          "colunas": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Colunas"
+          },
+          "linhas": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Linhas"
+          },
+          "totalLinhas": {
+            "type": "integer",
+            "title": "Totallinhas"
+          },
+          "truncado": {
+            "type": "boolean",
+            "title": "Truncado"
+          },
+          "duracaoMs": {
+            "type": "integer",
+            "title": "Duracaoms"
+          },
+          "erro": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Erro"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ok",
+          "colunas",
+          "linhas",
+          "totalLinhas",
+          "truncado",
+          "duracaoMs",
+          "erro"
+        ],
+        "title": "ConsultaSqlResult"
       },
       "HTTPValidationError": {
         "properties": {
@@ -639,6 +1059,68 @@
         "title": "ParametroPublico",
         "description": "Um parâmetro como a tela o vê.\n\nNÃO TEM O VALOR DO SEGREDO. Para tipo SECRET e CREDENTIAL, ``value`` volta\nnulo e ``temValor`` diz se algo está guardado. Mascarar seria pior que\nomitir: sugere que existe um jeito de ler pela API."
       },
+      "ProtheusDbConfig": {
+        "properties": {
+          "host": {
+            "type": "string",
+            "title": "Host"
+          },
+          "porta": {
+            "type": "integer",
+            "title": "Porta"
+          },
+          "banco": {
+            "type": "string",
+            "title": "Banco"
+          },
+          "usuario": {
+            "type": "string",
+            "title": "Usuario"
+          },
+          "senhaConfigurada": {
+            "type": "boolean",
+            "title": "Senhaconfigurada"
+          },
+          "criptografia": {
+            "type": "boolean",
+            "title": "Criptografia"
+          },
+          "certificadoConfiavel": {
+            "type": "boolean",
+            "title": "Certificadoconfiavel"
+          },
+          "timeoutSegundos": {
+            "type": "integer",
+            "title": "Timeoutsegundos"
+          },
+          "configurado": {
+            "type": "boolean",
+            "title": "Configurado"
+          },
+          "pendencias": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Pendencias"
+          }
+        },
+        "type": "object",
+        "required": [
+          "host",
+          "porta",
+          "banco",
+          "usuario",
+          "senhaConfigurada",
+          "criptografia",
+          "certificadoConfiavel",
+          "timeoutSegundos",
+          "configurado",
+          "pendencias"
+        ],
+        "title": "ProtheusDbConfig",
+        "description": "O que está configurado. A senha nunca aparece aqui, nem mascarada."
+      },
       "SessionResponse": {
         "properties": {
           "user": {
@@ -683,6 +1165,37 @@
           "mustChangePassword"
         ],
         "title": "SessionUser"
+      },
+      "TabelaBanco": {
+        "properties": {
+          "nome": {
+            "type": "string",
+            "title": "Nome"
+          },
+          "esquema": {
+            "type": "string",
+            "title": "Esquema"
+          },
+          "registrosEstimados": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Registrosestimados"
+          }
+        },
+        "type": "object",
+        "required": [
+          "nome",
+          "esquema",
+          "registrosEstimados"
+        ],
+        "title": "TabelaBanco",
+        "description": "Uma tabela do banco, para navegar antes de escrever a consulta."
       },
       "ValidationError": {
         "properties": {

@@ -15,6 +15,7 @@ from trigo_api.schemas.auth import SessionUser
 from trigo_api.schemas.parametros import (
     AtualizarCredencialInput,
     AtualizarParametroInput,
+    Branding,
     ParametroPublico,
 )
 from trigo_api.security.cipher import SecretCipher
@@ -59,6 +60,23 @@ def _publico(linha: Parameter, cifra: SecretCipher) -> ParametroPublico:
     )
 
 
+@router.get("/branding", response_model=Branding)
+def branding(
+    servico: Annotated[ParametrosService, Depends(obter_servico)],
+) -> Branding:
+    """Identidade do portal, SEM autenticacao.
+
+    A tela de login precisa do nome e da mensagem antes de existir sessão. Só
+    estes campos saem sem sessão, e a lista está fixa no código — parâmetro
+    novo não vira público por descuido.
+    """
+    return Branding(
+        portalName=servico.texto("PORTAL_NOME", "Portal Trigo"),
+        loginMessage=servico.texto("PORTAL_MENSAGEM_LOGIN", ""),
+        supportEmail=servico.texto("PORTAL_EMAIL_SUPORTE", "") or None,
+    )
+
+
 @router.get("", response_model=list[ParametroPublico])
 def listar(
     servico: Annotated[ParametrosService, Depends(obter_servico)],
@@ -69,7 +87,7 @@ def listar(
     return [_publico(linha, cifra) for linha in servico.listar()]
 
 
-@router.put("/{chave}", response_model=ParametroPublico)
+@router.patch("/{chave}", response_model=ParametroPublico)
 def atualizar(
     chave: str,
     dados: AtualizarParametroInput,
@@ -81,7 +99,7 @@ def atualizar(
     return _publico(linha, SecretCipher.from_env(settings.parameter_encryption_key))
 
 
-@router.put("/{chave}/credencial", response_model=ParametroPublico)
+@router.patch("/{chave}/credential", response_model=ParametroPublico)
 def atualizar_credencial(
     chave: str,
     dados: AtualizarCredencialInput,
@@ -93,7 +111,7 @@ def atualizar_credencial(
     return _publico(linha, SecretCipher.from_env(settings.parameter_encryption_key))
 
 
-@router.delete("/{chave}", response_model=ParametroPublico)
+@router.post("/{chave}/reset", response_model=ParametroPublico)
 def restaurar(
     chave: str,
     servico: Annotated[ParametrosService, Depends(obter_servico)],

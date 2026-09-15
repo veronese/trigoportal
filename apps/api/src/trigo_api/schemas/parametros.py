@@ -37,3 +37,13 @@ class AtualizarParametroInput(BaseModel):
 class AtualizarCredencialInput(BaseModel):
     usuario: str = Field(min_length=1, max_length=320)
     senha: str = Field(min_length=1)
+
+
+class Branding(BaseModel):
+    """O que a tela de login mostra antes de haver sessão."""
+
+    model_config = ConfigDict(populate_by_name=True, serialize_by_alias=True)
+
+    portal_name: str = Field(alias="portalName")
+    login_message: str = Field(alias="loginMessage")
+    support_email: str | None = Field(alias="supportEmail")

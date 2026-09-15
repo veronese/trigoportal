@@ -61,6 +61,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/parameters/branding": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Branding
+         * @description Identidade do portal, SEM autenticacao.
+         *
+         *     A tela de login precisa do nome e da mensagem antes de existir sessão. Só
+         *     estes campos saem sem sessão, e a lista está fixa no código — parâmetro
+         *     novo não vira público por descuido.
+         */
+        get: operations["branding_api_parameters_branding_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/parameters": {
         parameters: {
             query?: never;
@@ -86,17 +110,16 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Atualizar */
-        put: operations["atualizar_api_parameters__chave__put"];
+        put?: never;
         post?: never;
-        /** Restaurar */
-        delete: operations["restaurar_api_parameters__chave__delete"];
+        delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /** Atualizar */
+        patch: operations["atualizar_api_parameters__chave__patch"];
         trace?: never;
     };
-    "/api/parameters/{chave}/credencial": {
+    "/api/parameters/{chave}/credential": {
         parameters: {
             query?: never;
             header?: never;
@@ -104,9 +127,26 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Atualizar Credencial */
-        put: operations["atualizar_credencial_api_parameters__chave__credencial_put"];
+        put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Atualizar Credencial */
+        patch: operations["atualizar_credencial_api_parameters__chave__credential_patch"];
+        trace?: never;
+    };
+    "/api/parameters/{chave}/reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Restaurar */
+        post: operations["restaurar_api_parameters__chave__reset_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -191,6 +231,94 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Listar */
+        get: operations["listar_api_users_get"];
+        put?: never;
+        /** Criar */
+        post: operations["criar_api_users_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/users/{usuario_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Obter */
+        get: operations["obter_api_users__usuario_id__get"];
+        put?: never;
+        post?: never;
+        /** Remover */
+        delete: operations["remover_api_users__usuario_id__delete"];
+        options?: never;
+        head?: never;
+        /** Atualizar */
+        patch: operations["atualizar_api_users__usuario_id__patch"];
+        trace?: never;
+    };
+    "/api/users/{usuario_id}/reset-password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Redefinir Senha */
+        post: operations["redefinir_senha_api_users__usuario_id__reset_password_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/users/{usuario_id}/deactivate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Desativar */
+        post: operations["desativar_api_users__usuario_id__deactivate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/users/{usuario_id}/unlock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Desbloquear */
+        post: operations["desbloquear_api_users__usuario_id__unlock_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/health": {
         parameters: {
             query?: never;
@@ -223,6 +351,30 @@ export interface components {
         AtualizarParametroInput: {
             /** Value */
             value: string;
+        };
+        /**
+         * AtualizarUsuarioInput
+         * @description Alteração parcial: só o que vier é alterado.
+         */
+        AtualizarUsuarioInput: {
+            /** Name */
+            name?: string | null;
+            /** Role */
+            role?: string | null;
+            /** Isactive */
+            isActive?: boolean | null;
+        };
+        /**
+         * Branding
+         * @description O que a tela de login mostra antes de haver sessão.
+         */
+        Branding: {
+            /** Portalname */
+            portalName: string;
+            /** Loginmessage */
+            loginMessage: string;
+            /** Supportemail */
+            supportEmail: string | null;
         };
         /**
          * ColunaBanco
@@ -266,6 +418,23 @@ export interface components {
             duracaoMs: number;
             /** Erro */
             erro: string | null;
+        };
+        /** CriarUsuarioInput */
+        CriarUsuarioInput: {
+            /** Name */
+            name: string;
+            /**
+             * Email
+             * Format: email
+             */
+            email: string;
+            /** Password */
+            password: string;
+            /**
+             * Role
+             * @default USER
+             */
+            role: string;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -358,6 +527,46 @@ export interface components {
             /** Pendencias */
             pendencias: string[];
         };
+        /**
+         * PublicUser
+         * @description Usuário como a tela o vê. NUNCA traz o hash da senha.
+         */
+        PublicUser: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Email */
+            email: string;
+            /** Role */
+            role: string;
+            /** Isactive */
+            isActive: boolean;
+            /** Provider */
+            provider: string;
+            /** Mustchangepassword */
+            mustChangePassword: boolean;
+            /** Failedloginattempts */
+            failedLoginAttempts: number;
+            /** Lockeduntil */
+            lockedUntil: string | null;
+            /** Provisionalpasswordexpiresat */
+            provisionalPasswordExpiresAt: string | null;
+            /** Lastloginat */
+            lastLoginAt: string | null;
+            /** Passwordchangedat */
+            passwordChangedAt: string | null;
+            /**
+             * Createdat
+             * Format: date-time
+             */
+            createdAt: string;
+        };
+        /** RedefinirSenhaInput */
+        RedefinirSenhaInput: {
+            /** Newpassword */
+            newPassword: string;
+        };
         /** SessionResponse */
         SessionResponse: {
             user: components["schemas"]["SessionUser"];
@@ -386,6 +595,13 @@ export interface components {
             esquema: string;
             /** Registrosestimados */
             registrosEstimados: number | null;
+        };
+        /** UserListResponse */
+        UserListResponse: {
+            /** Data */
+            data: components["schemas"]["PublicUser"][];
+            /** Total */
+            total: number;
         };
         /** ValidationError */
         ValidationError: {
@@ -493,6 +709,26 @@ export interface operations {
             };
         };
     };
+    branding_api_parameters_branding_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Branding"];
+                };
+            };
+        };
+    };
     listar_api_parameters_get: {
         parameters: {
             query?: never;
@@ -526,7 +762,7 @@ export interface operations {
             };
         };
     };
-    atualizar_api_parameters__chave__put: {
+    atualizar_api_parameters__chave__patch: {
         parameters: {
             query?: never;
             header?: {
@@ -565,7 +801,7 @@ export interface operations {
             };
         };
     };
-    restaurar_api_parameters__chave__delete: {
+    atualizar_credencial_api_parameters__chave__credential_patch: {
         parameters: {
             query?: never;
             header?: {
@@ -578,7 +814,11 @@ export interface operations {
                 tp_session?: string | null;
             };
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AtualizarCredencialInput"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -600,7 +840,7 @@ export interface operations {
             };
         };
     };
-    atualizar_credencial_api_parameters__chave__credencial_put: {
+    restaurar_api_parameters__chave__reset_post: {
         parameters: {
             query?: never;
             header?: {
@@ -613,11 +853,7 @@ export interface operations {
                 tp_session?: string | null;
             };
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AtualizarCredencialInput"];
-            };
-        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
@@ -766,6 +1002,296 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ConsultaSqlResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    listar_api_users_get: {
+        parameters: {
+            query?: {
+                search?: string | null;
+                page?: number;
+                pageSize?: number;
+            };
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: {
+                tp_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    criar_api_users_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: {
+                tp_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CriarUsuarioInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicUser"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    obter_api_users__usuario_id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                usuario_id: string;
+            };
+            cookie?: {
+                tp_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicUser"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remover_api_users__usuario_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                usuario_id: string;
+            };
+            cookie?: {
+                tp_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    atualizar_api_users__usuario_id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                usuario_id: string;
+            };
+            cookie?: {
+                tp_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AtualizarUsuarioInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicUser"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    redefinir_senha_api_users__usuario_id__reset_password_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                usuario_id: string;
+            };
+            cookie?: {
+                tp_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RedefinirSenhaInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicUser"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    desativar_api_users__usuario_id__deactivate_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                usuario_id: string;
+            };
+            cookie?: {
+                tp_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicUser"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    desbloquear_api_users__usuario_id__unlock_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                usuario_id: string;
+            };
+            cookie?: {
+                tp_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicUser"];
                 };
             };
             /** @description Validation Error */

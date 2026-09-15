@@ -9,7 +9,7 @@ SQLAlchemy inferir daria nomes diferentes dos gravados e a consulta falharia.
 from collections.abc import Generator
 from datetime import datetime
 
-from sqlalchemy import Boolean, Integer, String, create_engine
+from sqlalchemy import Boolean, Integer, Numeric, String, UniqueConstraint, create_engine
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, sessionmaker
 
 from trigo_api.config import obter_settings
@@ -80,3 +80,38 @@ def obter_sessao() -> Generator[Session]:
         yield sessao
     finally:
         sessao.close()
+
+
+class Product(Base):
+    """Espelho local do cadastro de produtos do Protheus.
+
+    A chave de negócio é (``empori``, ``code``), e não o id: o mesmo código
+    existe em empresas diferentes e são produtos diferentes.
+    """
+
+    __tablename__ = "tp_products"
+    __table_args__ = (UniqueConstraint("empori", "code", name="tp_products_empori_code_uq"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    #: Empresa de ORIGEM do registro. Coluna do PORTAL, não do Protheus.
+    empori: Mapped[str] = mapped_column(String(4), default="")
+    #: Tabela física de origem (SB1020, SB1090). O fato bruto por trás do EMPORI.
+    source_table: Mapped[str] = mapped_column("source_table", String(20))
+    code: Mapped[str] = mapped_column(String(30))
+    description: Mapped[str] = mapped_column(String(200))
+    type: Mapped[str | None] = mapped_column(String(10))
+    unit: Mapped[str | None] = mapped_column(String(10))
+    group_code: Mapped[str | None] = mapped_column("group_code", String(20))
+    default_warehouse: Mapped[str | None] = mapped_column("default_warehouse", String(10))
+    ncm: Mapped[str | None] = mapped_column(String(20))
+    fiscal_model: Mapped[str | None] = mapped_column("fiscal_model", String(20))
+    is_blocked: Mapped[bool] = mapped_column("is_blocked", Boolean, default=False)
+    is_active: Mapped[bool] = mapped_column("is_active", Boolean, default=True)
+    cost_center: Mapped[str | None] = mapped_column("cost_center", String(30))
+    expense_account: Mapped[str | None] = mapped_column("expense_account", String(30))
+    asset_account: Mapped[str | None] = mapped_column("asset_account", String(30))
+    revenue_account: Mapped[str | None] = mapped_column("revenue_account", String(30))
+    sale_price: Mapped[float | None] = mapped_column("sale_price", Numeric(18, 6))
+    synced_at: Mapped[datetime] = mapped_column("synced_at", DataHoraPortal)
+    created_at: Mapped[datetime] = mapped_column("created_at", DataHoraPortal)
+    updated_at: Mapped[datetime] = mapped_column("updated_at", DataHoraPortal)

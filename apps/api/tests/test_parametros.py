@@ -101,8 +101,8 @@ def test_credencial_faz_o_ciclo_completo(parametros: None) -> None:
 
 def test_api_nunca_devolve_a_senha(cliente: TestClient, parametros: None) -> None:
     """O teste que mais importa deste arquivo."""
-    cliente.put(
-        f"/api/parameters/{CHAVE_CRED}/credencial",
+    cliente.patch(
+        f"/api/parameters/{CHAVE_CRED}/credential",
         json={"usuario": "usr", "senha": "senha-que-nao-pode-vazar"},
     )
     resposta = cliente.get("/api/parameters")
@@ -118,7 +118,9 @@ def test_api_nunca_devolve_a_senha(cliente: TestClient, parametros: None) -> Non
 
 
 def test_numero_invalido_e_recusado(cliente: TestClient, parametros: None) -> None:
-    resposta = cliente.put(f"/api/parameters/{CHAVE_NUM}", json={"value": "nao-e-numero"})
+    resposta = cliente.patch(
+        f"/api/parameters/{CHAVE_NUM}", json={"value": "nao-e-numero"}
+    )
     assert resposta.status_code == 400
     assert "numero" in resposta.json()["message"].lower()
 
@@ -126,7 +128,7 @@ def test_numero_invalido_e_recusado(cliente: TestClient, parametros: None) -> No
 def test_credencial_pela_rota_comum_e_recusada(
     cliente: TestClient, parametros: None
 ) -> None:
-    resposta = cliente.put(f"/api/parameters/{CHAVE_CRED}", json={"value": "x"})
+    resposta = cliente.patch(f"/api/parameters/{CHAVE_CRED}", json={"value": "x"})
     assert resposta.status_code == 400
 
 

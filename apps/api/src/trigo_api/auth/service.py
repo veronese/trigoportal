@@ -17,7 +17,7 @@ from trigo_api.db import Parameter, User
 from trigo_api.errors import ApiError
 from trigo_api.schemas.auth import LoginInput, SessionUser
 from trigo_api.security import jwt as token_jwt
-from trigo_api.security.password import verify_password
+from trigo_api.security.password import hash_password, verify_password
 
 logger = logging.getLogger(__name__)
 
@@ -64,6 +64,48 @@ class AuthService:
         self._sessao.commit()
 
         logger.info("Login de %s", usuario.email)
+        return self._emitir(usuario)
+
+    def trocar_senha(
+        self, usuario_id: str, senha_atual: str, senha_nova: str
+    ) -> tuple[SessionUser, str, int]:
+        """Troca de senha pelo próprio usuário — e a saída da trava de primeiro
+        acesso.
+
+        Exige a senha ATUAL mesmo estando travado: o usuário acabou de digitá-la
+        no login, e isso protege sessão esquecida em máquina compartilhada.
+
+        Incrementa ``token_version``, o que derruba as OUTRAS sessões dele, e
+        devolve um token novo para quem trocou não ser expulso da própria tela.
+        """
+        usuario = self._sessao.get(User, usuario_id)
+        if usuario is None:
+            raise ApiError(401, "Sessao invalida")
+        if usuario.role not in PAPEIS_VALIDOS:
+            raise ApiError(401, "Papel de acesso invalido")
+
+        if usuario.provider != "local":
+            raise ApiError(
+                409,
+                f'Sua senha e gerenciada por "{usuario.provider}" e nao pode ser '
+                "trocada aqui",
+            )
+
+        if not verify_password(senha_atual, usuario.password_hash):
+            raise ApiError(401, "Senha atual incorreta")
+
+        if senha_atual == senha_nova:
+            raise ApiError(400, "A nova senha deve ser diferente da atual")
+
+        usuario.password_hash = hash_password(senha_nova)
+        usuario.must_change_password = False
+        usuario.password_changed_at = _agora()
+        usuario.provisional_password_at = None
+        usuario.token_version += 1
+        usuario.updated_at = _agora()
+        self._sessao.commit()
+
+        logger.info("Senha trocada por %s", usuario.email)
         return self._emitir(usuario)
 
     def carregar_da_sessao(self, sub: str, tv: int) -> SessionUser:

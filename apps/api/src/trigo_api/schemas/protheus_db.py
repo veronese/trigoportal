@@ -72,3 +72,34 @@ class ConsultaSqlResult(BaseModel):
     duracao_ms: int = Field(alias="duracaoMs")
     #: Mensagem pronta para a tela quando a consulta é recusada ou falha.
     erro: str | None
+
+
+class ProtheusDbTabela(BaseModel):
+    """Uma tabela de produtos e o que foi encontrado nela."""
+
+    empresa: str
+    nome: str
+    existe: bool
+    #: Nulo quando a tabela não existe ou a contagem falhou.
+    registros: int | None
+    #: Motivo, quando a contagem não foi possível.
+    detalhe: str | None
+
+
+class ProtheusDbTestResult(BaseModel):
+    model_config = ConfigDict(populate_by_name=True, serialize_by_alias=True)
+
+    ok: bool
+    #: Frase pronta para a tela.
+    detalhe: str
+    duracao_ms: int = Field(alias="duracaoMs")
+    servidor: str | None
+    versao_servidor: str | None = Field(alias="versaoServidor")
+    banco: str | None
+    login_efetivo: str | None = Field(alias="loginEfetivo")
+    #: O login consegue gravar? true é ALERTA, não sucesso: o ETL lê, e
+    #: credencial com escrita transforma um erro de consulta em risco para o ERP.
+    pode_escrever: bool | None = Field(alias="podeEscrever")
+    tabelas: list[ProtheusDbTabela]
+    #: Primeira linha do erro, quando falha.
+    erro: str | None

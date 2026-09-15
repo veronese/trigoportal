@@ -128,6 +128,82 @@
         }
       }
     },
+    "/api/auth/change-password": {
+      "post": {
+        "tags": [
+          "auth"
+        ],
+        "summary": "Trocar Senha",
+        "description": "Única rota de escrita liberada durante a trava — e a saída dela.\n\nDevolve cookie novo: o ``token_version`` mudou e o antigo acabou de ser\nrevogado, então sem isto quem trocou a senha seria expulso da própria tela.",
+        "operationId": "trocar_senha_api_auth_change_password_post",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "tp_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Tp Session"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/parameters/branding": {
       "get": {
         "tags": [
@@ -510,6 +586,72 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ProtheusDbConfig"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/protheus-db/testar": {
+      "post": {
+        "tags": [
+          "protheus-db"
+        ],
+        "summary": "Testar",
+        "description": "Exige escrita porque abre sessão no banco do ERP em produção.",
+        "operationId": "testar_api_protheus_db_testar_post",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "tp_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Tp Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtheusDbTestResult"
                 }
               }
             }
@@ -1396,6 +1538,545 @@
         }
       }
     },
+    "/api/products": {
+      "get": {
+        "tags": [
+          "produtos"
+        ],
+        "summary": "Listar",
+        "operationId": "listar_api_products_get",
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Search"
+            }
+          },
+          {
+            "name": "empori",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Empori"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Pagesize"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "tp_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Tp Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/products/sync": {
+      "post": {
+        "tags": [
+          "produtos"
+        ],
+        "summary": "Sincronizar",
+        "description": "Dispara a carga a partir do banco do Protheus.\n\n200 e não 202: a carga roda no próprio request e o relatório por empresa\nvolta na resposta. Quando o volume exigir execução em segundo plano, isto\nvira um job e a rota passa a devolver 202 com um id de acompanhamento.",
+        "operationId": "sincronizar_api_products_sync_post",
+        "parameters": [
+          {
+            "name": "empresa",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Empresa"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "tp_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Tp Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductSyncResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/products/{produto_id}": {
+      "get": {
+        "tags": [
+          "produtos"
+        ],
+        "summary": "Obter",
+        "description": "Rota com parâmetro vem DEPOIS de ``/sync``.\n\nRegistrada antes, ``sync`` seria lido como id de produto e a carga viraria\num 404 sem explicação.",
+        "operationId": "obter_api_products__produto_id__get",
+        "parameters": [
+          {
+            "name": "produto_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Produto Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "tp_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Tp Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicProduct"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/protheus/status": {
+      "get": {
+        "tags": [
+          "protheus"
+        ],
+        "summary": "Protheus Status",
+        "operationId": "protheus_status_api_protheus_status_get",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "tp_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Tp Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtheusStatus"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/protheus/test-connection": {
+      "post": {
+        "tags": [
+          "protheus"
+        ],
+        "summary": "Protheus Testar",
+        "description": "Exige escrita porque consome uma sessão/licença no ERP a cada chamada.",
+        "operationId": "protheus_testar_api_protheus_test_connection_post",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "tp_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Tp Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtheusTestResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/database/status": {
+      "get": {
+        "tags": [
+          "banco"
+        ],
+        "summary": "Database Status",
+        "description": "Diagnóstico da conexão do PORTAL, em leitura.\n\nA conexão é definida no ambiente, não pela tela — por isso não existe rota\nde escrita aqui. A senha nunca aparece, nem mascarada.",
+        "operationId": "database_status_api_database_status_get",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "tp_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Tp Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DatabaseStatus"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/diagnostics": {
+      "get": {
+        "tags": [
+          "diagnostico"
+        ],
+        "summary": "Diagnostico",
+        "operationId": "diagnostico_api_diagnostics_get",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "tp_session",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Tp Session"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiagnosticoResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/health": {
       "get": {
         "tags": [
@@ -1530,6 +2211,70 @@
         ],
         "title": "Branding",
         "description": "O que a tela de login mostra antes de haver sessão."
+      },
+      "CaminhoDiagnostico": {
+        "properties": {
+          "nome": {
+            "type": "string",
+            "title": "Nome"
+          },
+          "caminho": {
+            "type": "string",
+            "title": "Caminho"
+          },
+          "existe": {
+            "type": "boolean",
+            "title": "Existe"
+          },
+          "tamanho": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tamanho"
+          },
+          "observacao": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observacao"
+          }
+        },
+        "type": "object",
+        "required": [
+          "nome",
+          "caminho",
+          "existe"
+        ],
+        "title": "CaminhoDiagnostico"
+      },
+      "ChangePasswordInput": {
+        "properties": {
+          "currentPassword": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Currentpassword"
+          },
+          "newPassword": {
+            "type": "string",
+            "title": "Newpassword"
+          }
+        },
+        "type": "object",
+        "required": [
+          "currentPassword",
+          "newPassword"
+        ],
+        "title": "ChangePasswordInput"
       },
       "ColunaBanco": {
         "properties": {
@@ -1677,6 +2422,147 @@
         ],
         "title": "CriarUsuarioInput"
       },
+      "DatabaseStatus": {
+        "properties": {
+          "provider": {
+            "type": "string",
+            "title": "Provider"
+          },
+          "servidor": {
+            "type": "string",
+            "title": "Servidor"
+          },
+          "porta": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Porta"
+          },
+          "banco": {
+            "type": "string",
+            "title": "Banco"
+          },
+          "usuario": {
+            "type": "string",
+            "title": "Usuario"
+          },
+          "criptografado": {
+            "type": "boolean",
+            "title": "Criptografado"
+          },
+          "conectado": {
+            "type": "boolean",
+            "title": "Conectado"
+          },
+          "latenciaMs": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latenciams"
+          },
+          "versaoServidor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Versaoservidor"
+          },
+          "detalheErro": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detalheerro"
+          }
+        },
+        "type": "object",
+        "required": [
+          "provider",
+          "servidor",
+          "porta",
+          "banco",
+          "usuario",
+          "criptografado",
+          "conectado",
+          "latenciaMs",
+          "versaoServidor",
+          "detalheErro"
+        ],
+        "title": "DatabaseStatus",
+        "description": "Diagnóstico da conexão do PORTAL, em leitura.\n\nA conexão é definida no ambiente, não pela tela. A senha nunca aparece\naqui, nem mascarada."
+      },
+      "DiagnosticoResponse": {
+        "properties": {
+          "geradoEm": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Geradoem"
+          },
+          "runtime": {
+            "items": {
+              "$ref": "#/components/schemas/ItemDiagnostico"
+            },
+            "type": "array",
+            "title": "Runtime"
+          },
+          "caminhos": {
+            "items": {
+              "$ref": "#/components/schemas/CaminhoDiagnostico"
+            },
+            "type": "array",
+            "title": "Caminhos"
+          },
+          "pacotes": {
+            "items": {
+              "$ref": "#/components/schemas/PacoteDiagnostico"
+            },
+            "type": "array",
+            "title": "Pacotes"
+          },
+          "banco": {
+            "items": {
+              "$ref": "#/components/schemas/ItemDiagnostico"
+            },
+            "type": "array",
+            "title": "Banco"
+          },
+          "alertas": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Alertas"
+          }
+        },
+        "type": "object",
+        "required": [
+          "geradoEm",
+          "runtime",
+          "caminhos",
+          "pacotes",
+          "banco",
+          "alertas"
+        ],
+        "title": "DiagnosticoResponse"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -1689,6 +2575,35 @@
         },
         "type": "object",
         "title": "HTTPValidationError"
+      },
+      "ItemDiagnostico": {
+        "properties": {
+          "nome": {
+            "type": "string",
+            "title": "Nome"
+          },
+          "valor": {
+            "type": "string",
+            "title": "Valor"
+          },
+          "observacao": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observacao"
+          }
+        },
+        "type": "object",
+        "required": [
+          "nome",
+          "valor"
+        ],
+        "title": "ItemDiagnostico"
       },
       "LoginInput": {
         "properties": {
@@ -1712,6 +2627,24 @@
         ],
         "title": "LoginInput",
         "description": "Credenciais do login.\n\nO e-mail NÃO passa por validação de formato aqui, e isso é deliberado. No\nlogin ele é apenas a chave de busca: recusar antes de consultar não protege\nnada — a senha ainda precisaria conferir — e o validador do Pydantic é mais\nrígido que o do backend anterior. Ele recusa domínio de uso interno\n(``.local``, por exemplo), que o ``zod.email()`` aceitava. Manter o rigor\naqui trancaria para fora qualquer conta em domínio interno já cadastrada.\n\nFormato de e-mail se valida no CADASTRO do usuário, onde recusar é barato e\na pessoa pode corrigir. Ver ``CriarUsuarioInput``."
+      },
+      "PacoteDiagnostico": {
+        "properties": {
+          "nome": {
+            "type": "string",
+            "title": "Nome"
+          },
+          "versao": {
+            "type": "string",
+            "title": "Versao"
+          }
+        },
+        "type": "object",
+        "required": [
+          "nome",
+          "versao"
+        ],
+        "title": "PacoteDiagnostico"
       },
       "ParametroPublico": {
         "properties": {
@@ -1817,6 +2750,117 @@
         "title": "ParametroPublico",
         "description": "Um parâmetro como a tela o vê.\n\nNÃO TEM O VALOR DO SEGREDO. Para tipo SECRET e CREDENTIAL, ``value`` volta\nnulo e ``temValor`` diz se algo está guardado. Mascarar seria pior que\nomitir: sugere que existe um jeito de ler pela API."
       },
+      "ProductListResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/PublicProduct"
+            },
+            "type": "array",
+            "title": "Data"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "total"
+        ],
+        "title": "ProductListResponse"
+      },
+      "ProductSyncCompanyResult": {
+        "properties": {
+          "empresa": {
+            "type": "string",
+            "title": "Empresa"
+          },
+          "filial": {
+            "type": "string",
+            "title": "Filial"
+          },
+          "empori": {
+            "type": "string",
+            "title": "Empori"
+          },
+          "sourceTable": {
+            "type": "string",
+            "title": "Sourcetable"
+          },
+          "paginas": {
+            "type": "integer",
+            "title": "Paginas"
+          },
+          "lidos": {
+            "type": "integer",
+            "title": "Lidos"
+          },
+          "gravados": {
+            "type": "integer",
+            "title": "Gravados"
+          },
+          "duplicados": {
+            "type": "integer",
+            "title": "Duplicados",
+            "default": 0
+          },
+          "erro": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Erro"
+          }
+        },
+        "type": "object",
+        "required": [
+          "empresa",
+          "filial",
+          "empori",
+          "sourceTable",
+          "paginas",
+          "lidos",
+          "gravados"
+        ],
+        "title": "ProductSyncCompanyResult"
+      },
+      "ProductSyncResult": {
+        "properties": {
+          "empresas": {
+            "items": {
+              "$ref": "#/components/schemas/ProductSyncCompanyResult"
+            },
+            "type": "array",
+            "title": "Empresas"
+          },
+          "lidos": {
+            "type": "integer",
+            "title": "Lidos"
+          },
+          "gravados": {
+            "type": "integer",
+            "title": "Gravados"
+          },
+          "duracaoMs": {
+            "type": "integer",
+            "title": "Duracaoms"
+          }
+        },
+        "type": "object",
+        "required": [
+          "empresas",
+          "lidos",
+          "gravados",
+          "duracaoMs"
+        ],
+        "title": "ProductSyncResult"
+      },
       "ProtheusDbConfig": {
         "properties": {
           "host": {
@@ -1878,6 +2922,407 @@
         ],
         "title": "ProtheusDbConfig",
         "description": "O que está configurado. A senha nunca aparece aqui, nem mascarada."
+      },
+      "ProtheusDbTabela": {
+        "properties": {
+          "empresa": {
+            "type": "string",
+            "title": "Empresa"
+          },
+          "nome": {
+            "type": "string",
+            "title": "Nome"
+          },
+          "existe": {
+            "type": "boolean",
+            "title": "Existe"
+          },
+          "registros": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Registros"
+          },
+          "detalhe": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detalhe"
+          }
+        },
+        "type": "object",
+        "required": [
+          "empresa",
+          "nome",
+          "existe",
+          "registros",
+          "detalhe"
+        ],
+        "title": "ProtheusDbTabela",
+        "description": "Uma tabela de produtos e o que foi encontrado nela."
+      },
+      "ProtheusDbTestResult": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok"
+          },
+          "detalhe": {
+            "type": "string",
+            "title": "Detalhe"
+          },
+          "duracaoMs": {
+            "type": "integer",
+            "title": "Duracaoms"
+          },
+          "servidor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Servidor"
+          },
+          "versaoServidor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Versaoservidor"
+          },
+          "banco": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Banco"
+          },
+          "loginEfetivo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Loginefetivo"
+          },
+          "podeEscrever": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Podeescrever"
+          },
+          "tabelas": {
+            "items": {
+              "$ref": "#/components/schemas/ProtheusDbTabela"
+            },
+            "type": "array",
+            "title": "Tabelas"
+          },
+          "erro": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Erro"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ok",
+          "detalhe",
+          "duracaoMs",
+          "servidor",
+          "versaoServidor",
+          "banco",
+          "loginEfetivo",
+          "podeEscrever",
+          "tabelas",
+          "erro"
+        ],
+        "title": "ProtheusDbTestResult"
+      },
+      "ProtheusStatus": {
+        "properties": {
+          "configurado": {
+            "type": "boolean",
+            "title": "Configurado"
+          },
+          "baseUrl": {
+            "type": "string",
+            "title": "Baseurl"
+          },
+          "usuario": {
+            "type": "string",
+            "title": "Usuario"
+          },
+          "timeoutSegundos": {
+            "type": "integer",
+            "title": "Timeoutsegundos"
+          },
+          "senhaConfigurada": {
+            "type": "boolean",
+            "title": "Senhaconfigurada"
+          }
+        },
+        "type": "object",
+        "required": [
+          "configurado",
+          "baseUrl",
+          "usuario",
+          "timeoutSegundos",
+          "senhaConfigurada"
+        ],
+        "title": "ProtheusStatus",
+        "description": "O que está configurado. A senha nunca aparece, só se ela existe."
+      },
+      "ProtheusTestResult": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok"
+          },
+          "detalhe": {
+            "type": "string",
+            "title": "Detalhe"
+          },
+          "tokenValidoPorSegundos": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tokenvalidoporsegundos"
+          },
+          "duracaoMs": {
+            "type": "integer",
+            "title": "Duracaoms"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ok",
+          "detalhe",
+          "tokenValidoPorSegundos",
+          "duracaoMs"
+        ],
+        "title": "ProtheusTestResult"
+      },
+      "PublicProduct": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "empori": {
+            "type": "string",
+            "title": "Empori"
+          },
+          "sourceTable": {
+            "type": "string",
+            "title": "Sourcetable"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Type"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
+          },
+          "group": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group"
+          },
+          "defaultWarehouse": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Defaultwarehouse"
+          },
+          "ncm": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ncm"
+          },
+          "fiscalModel": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fiscalmodel"
+          },
+          "isBlocked": {
+            "type": "boolean",
+            "title": "Isblocked"
+          },
+          "isActive": {
+            "type": "boolean",
+            "title": "Isactive"
+          },
+          "costCenter": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Costcenter"
+          },
+          "expenseAccount": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expenseaccount"
+          },
+          "assetAccount": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assetaccount"
+          },
+          "revenueAccount": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revenueaccount"
+          },
+          "salePrice": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Saleprice"
+          },
+          "syncedAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Syncedat"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "empori",
+          "sourceTable",
+          "code",
+          "description",
+          "type",
+          "unit",
+          "group",
+          "defaultWarehouse",
+          "ncm",
+          "fiscalModel",
+          "isBlocked",
+          "isActive",
+          "costCenter",
+          "expenseAccount",
+          "assetAccount",
+          "revenueAccount",
+          "salePrice",
+          "syncedAt"
+        ],
+        "title": "PublicProduct"
       },
       "PublicUser": {
         "properties": {

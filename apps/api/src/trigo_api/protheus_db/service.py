@@ -269,6 +269,134 @@ class ProtheusDbService:
         except ApiError as erro:
             return self._resultado_vazio(erro.message, inicio)
 
+    def testar(self, empresas: list[str]) -> dict[str, Any]:
+        """Abre a conexão de verdade e conta o que encontrou.
+
+        Responde mais que "conectou": diz em qual banco entrou, com qual login,
+        SE ESSE LOGIN CONSEGUE ESCREVER — que seria erro de configuração — e
+        quais tabelas de produto existem. É esta última resposta que decide se o
+        ETL de uma empresa tem o que ler.
+        """
+        inicio = perf_counter()
+        vazio: dict[str, Any] = {
+            "ok": False,
+            "detalhe": "",
+            "duracaoMs": 0,
+            "servidor": None,
+            "versaoServidor": None,
+            "banco": None,
+            "loginEfetivo": None,
+            "podeEscrever": None,
+            "tabelas": [],
+            "erro": None,
+        }
+
+        try:
+            with self.conexao() as con:
+                cur = con.cursor()
+                cur.execute(
+                    "SELECT CONVERT(varchar(200), SERVERPROPERTY('MachineName')), "
+                    "CONVERT(varchar(400), @@VERSION), DB_NAME(), SUSER_SNAME()"
+                )
+                servidor, versao, banco, login = cur.fetchone()
+
+                # Escrita é ALERTA, não recurso. Perguntado ao próprio SQL
+                # Server em vez de deduzido da role: permissão negada
+                # pontualmente ou concedida por outro caminho não apareceria
+                # numa checagem de role.
+                cur.execute(
+                    "SELECT CONVERT(int, ISNULL(HAS_PERMS_BY_NAME(NULL, NULL, 'INSERT'), 0)), "
+                    "CONVERT(int, ISNULL(HAS_PERMS_BY_NAME(NULL, NULL, 'UPDATE'), 0))"
+                )
+                insere, altera = cur.fetchone()
+                pode_escrever = bool(insere) or bool(altera)
+
+                tabelas = self._conferir_tabelas(con, empresas)
+
+            encontradas = [t for t in tabelas if t["existe"]]
+            if not tabelas:
+                resumo = "Nenhuma empresa configurada em PRODUTOS_EMPRESAS para conferir."
+            else:
+                resumo = (
+                    f"{len(encontradas)} de {len(tabelas)} tabela(s) de produto "
+                    "encontrada(s)."
+                )
+            aviso = ""
+            if pode_escrever:
+                aviso = (
+                    " ATENCAO: este login tem permissao de escrita. Use um login "
+                    "somente leitura."
+                )
+
+            return {
+                "ok": True,
+                "detalhe": f"Conectado em {banco} como {login}. {resumo}{aviso}",
+                "duracaoMs": self._ms(inicio),
+                "servidor": servidor,
+                "versaoServidor": str(versao).splitlines()[0],
+                "banco": banco,
+                "loginEfetivo": login,
+                "podeEscrever": pode_escrever,
+                "tabelas": tabelas,
+                "erro": None,
+            }
+        except ApiError as erro:
+            return {
+                **vazio,
+                "duracaoMs": self._ms(inicio),
+                "detalhe": erro.message,
+                "erro": erro.message,
+            }
+        except pyodbc.Error as erro:
+            return {
+                **vazio,
+                "duracaoMs": self._ms(inicio),
+                "detalhe": self._explicar(str(erro)),
+                "erro": str(erro).splitlines()[0],
+            }
+
+    def _conferir_tabelas(
+        self, con: pyodbc.Connection, empresas: list[str]
+    ) -> list[dict[str, Any]]:
+        """Existe a tabela de cada empresa, e quantos registros tem.
+
+        Tabela ausente NÃO derruba o teste: a resposta útil é "a 02 tem 30 mil e
+        a 09 não existe", e não um erro que esconde as duas informações.
+        """
+        resultado: list[dict[str, Any]] = []
+
+        for empresa in empresas:
+            nome = self.tabela_produtos(empresa)
+            parcial: dict[str, Any] = {
+                "empresa": empresa,
+                "nome": nome,
+                "existe": False,
+                "registros": None,
+                "detalhe": None,
+            }
+            try:
+                cur = con.cursor()
+                # Nome de tabela não entra como parâmetro em banco nenhum, então
+                # a existência é perguntada ao catálogo COM parâmetro, e a
+                # contagem só acontece depois que o SQL Server confirmou o nome.
+                cur.execute("SELECT COUNT(*) FROM sys.tables WHERE name = ?", nome)
+                parcial["existe"] = (cur.fetchone()[0] or 0) > 0
+
+                if not parcial["existe"]:
+                    parcial["detalhe"] = f"A tabela {nome} nao existe neste banco."
+                else:
+                    cur.execute(
+                        f"SELECT COUNT(*) FROM [{nome}] WITH (NOLOCK) "  # noqa: S608
+                        "WHERE D_E_L_E_T_ = ' '"
+                    )
+                    parcial["registros"] = int(cur.fetchone()[0] or 0)
+            except pyodbc.Error as erro:
+                parcial["detalhe"] = str(erro).splitlines()[0]
+
+            resultado.append(parcial)
+
+        return resultado
+
     # -------------------------------------------------------------- produtos
 
     def tabela_produtos(self, empresa: str) -> str:

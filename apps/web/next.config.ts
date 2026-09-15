@@ -1,6 +1,8 @@
 import type { NextConfig } from 'next'
 
-const BFF_URL = process.env.BFF_URL ?? 'http://localhost:3333'
+// A API Python roda na 3334. O nome da variavel continua BFF_URL para nao
+// quebrar .env e script de deploy que ja a definem.
+const BFF_URL = process.env.BFF_URL ?? 'http://localhost:3334'
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
@@ -16,6 +18,7 @@ const nextConfig: NextConfig = {
     return [
       // O front SEMPRE fala com a propria origem. Isso mantem o cookie httpOnly
       // como same-site e evita CORS/SameSite=None no navegador.
+      // O caminho continua /api/bff: renomear obrigaria a mexer em toda tela.
       { source: '/api/bff/:path*', destination: `${BFF_URL}/api/:path*` },
     ]
   },

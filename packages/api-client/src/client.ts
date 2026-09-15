@@ -65,10 +65,7 @@ export function createApiClient(config: HttpConfig) {
 
     // Diagnostico do sistema (somente leitura)
     diagnostics: {
-      get: (comAtualizacoes?: boolean) =>
-        diagnosticsApi.getSystemDiagnostics(config, comAtualizacoes),
-      planejarAtualizacao: (pacotes: string[]) =>
-        diagnosticsApi.planejarAtualizacao(config, pacotes),
+      get: () => diagnosticsApi.getSystemDiagnostics(config),
     },
 
     // Conexao com o Protheus

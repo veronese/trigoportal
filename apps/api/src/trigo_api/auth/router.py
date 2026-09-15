@@ -7,7 +7,12 @@ from fastapi import APIRouter, Depends, Response, status
 from trigo_api.auth.dependencies import SESSION_COOKIE, obter_servico, usuario_atual
 from trigo_api.auth.service import AuthService
 from trigo_api.config import Settings, obter_settings
-from trigo_api.schemas.auth import LoginInput, SessionResponse, SessionUser
+from trigo_api.schemas.auth import (
+    ChangePasswordInput,
+    LoginInput,
+    SessionResponse,
+    SessionUser,
+)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -50,3 +55,23 @@ def logout(resposta: Response) -> None:
 def me(usuario: Annotated[SessionUser, Depends(usuario_atual)]) -> SessionResponse:
     """Fora da trava de troca: o front precisa ler ``mustChangePassword``."""
     return SessionResponse(user=usuario)
+
+
+@router.post("/change-password", response_model=SessionResponse)
+def trocar_senha(
+    dados: ChangePasswordInput,
+    resposta: Response,
+    usuario: Annotated[SessionUser, Depends(usuario_atual)],
+    servico: Annotated[AuthService, Depends(obter_servico)],
+    settings: Annotated[Settings, Depends(obter_settings)],
+) -> SessionResponse:
+    """Única rota de escrita liberada durante a trava — e a saída dela.
+
+    Devolve cookie novo: o ``token_version`` mudou e o antigo acabou de ser
+    revogado, então sem isto quem trocou a senha seria expulso da própria tela.
+    """
+    sessao, token, segundos = servico.trocar_senha(
+        usuario.id, dados.current_password, dados.new_password
+    )
+    _gravar_cookie(resposta, token, segundos, settings)
+    return SessionResponse(user=sessao)

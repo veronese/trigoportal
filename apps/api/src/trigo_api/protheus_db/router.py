@@ -16,6 +16,7 @@ from trigo_api.schemas.protheus_db import (
     ConsultaSqlInput,
     ConsultaSqlResult,
     ProtheusDbConfig,
+    ProtheusDbTestResult,
     TabelaBanco,
 )
 from trigo_api.security.cipher import SecretCipher
@@ -50,6 +51,20 @@ def config(
         configurado=c.configurado,
         pendencias=c.pendencias,
     )
+
+
+@router.post("/testar", response_model=ProtheusDbTestResult)
+def testar(
+    servico: Annotated[ProtheusDbService, Depends(obter_servico)],
+    sessao: Annotated[Session, Depends(obter_sessao)],
+    settings: Annotated[Settings, Depends(obter_settings)],
+    _: Annotated[SessionUser, Depends(exigir("settings:write"))],
+) -> ProtheusDbTestResult:
+    """Exige escrita porque abre sessão no banco do ERP em produção."""
+    cifra = SecretCipher.from_env(settings.parameter_encryption_key)
+    bruto = ParametrosService(sessao, cifra).texto("PRODUTOS_EMPRESAS", "02,09")
+    empresas = [e.strip() for e in bruto.split(",") if e.strip()]
+    return ProtheusDbTestResult(**servico.testar(empresas))
 
 
 @router.get("/tabelas", response_model=list[TabelaBanco])

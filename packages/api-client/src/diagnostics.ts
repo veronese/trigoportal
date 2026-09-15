@@ -1,25 +1,25 @@
-import type { PlanoAtualizacao, SystemDiagnostics } from '@trigo/core'
+import type { components } from './gerado/api'
 import { request, type HttpConfig } from './http'
 
 /**
- * @param comAtualizacoes consulta o registry do npm pelas ultimas versoes.
- *   Sob demanda porque e a unica parte que sai para a internet e custa ~20
- *   requisicoes externas.
+ * Tipos do diagnostico, vindos do OpenAPI da API Python.
+ *
+ * Reexportados daqui para as telas nao precisarem conhecer o caminho do
+ * arquivo gerado — e para o dia em que o gerador mudar de lugar nao virar uma
+ * varredura por import quebrado.
  */
-export function getSystemDiagnostics(config: HttpConfig, comAtualizacoes = false) {
-  return request<SystemDiagnostics>(config, '/diagnostics', {
-    query: comAtualizacoes ? { atualizacoes: 'true' } : {},
-  })
-}
+export type DiagnosticoResponse = components['schemas']['DiagnosticoResponse']
+export type ItemDiagnostico = components['schemas']['ItemDiagnostico']
+export type CaminhoDiagnostico = components['schemas']['CaminhoDiagnostico']
+export type PacoteDiagnostico = components['schemas']['PacoteDiagnostico']
 
 /**
- * Monta o plano de atualizacao dos pacotes escolhidos.
+ * Diagnostico do servidor: execucao, arquivos, pacotes e banco.
  *
- * Nao executa nada: devolve script, verificacoes e rollback para revisao.
+ * NAO EXISTE MAIS o planejador de atualizacao. Ele lia o package.json e o
+ * registry do npm — ecossistema que o backend nao usa mais. Este endpoint
+ * RELATA versao; atualizar e trabalho do servidor, pelo `uv`.
  */
-export function planejarAtualizacao(config: HttpConfig, pacotes: string[]) {
-  return request<PlanoAtualizacao>(config, '/diagnostics/update-plan', {
-    method: 'POST',
-    body: { pacotes },
-  })
+export function getSystemDiagnostics(config: HttpConfig) {
+  return request<DiagnosticoResponse>(config, '/diagnostics')
 }

@@ -36,7 +36,16 @@ class ChangePasswordInput(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
     current_password: str = Field(alias="currentPassword", min_length=1)
-    new_password: str = Field(alias="newPassword", min_length=8)
+    new_password: str = Field(alias="newPassword")
+
+    @field_validator("new_password")
+    @classmethod
+    def _forca(cls, valor: str) -> str:
+        # As MESMAS exigências do cadastro. Uma senha escolhida pelo próprio
+        # usuário não pode ser mais fraca que a que o administrador define.
+        from trigo_api.schemas.usuarios import validar_senha
+
+        return validar_senha(valor)
 
 
 class SessionUser(BaseModel):

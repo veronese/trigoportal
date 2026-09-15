@@ -61,6 +61,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/auth/change-password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Trocar Senha
+         * @description Única rota de escrita liberada durante a trava — e a saída dela.
+         *
+         *     Devolve cookie novo: o ``token_version`` mudou e o antigo acabou de ser
+         *     revogado, então sem isto quem trocou a senha seria expulso da própria tela.
+         */
+        post: operations["trocar_senha_api_auth_change_password_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/parameters/branding": {
         parameters: {
             query?: never;
@@ -167,6 +190,26 @@ export interface paths {
         get: operations["config_api_protheus_db_config_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/protheus-db/testar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Testar
+         * @description Exige escrita porque abre sessão no banco do ERP em produção.
+         */
+        post: operations["testar_api_protheus_db_testar_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -319,6 +362,147 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/products": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Listar */
+        get: operations["listar_api_products_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/products/sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sincronizar
+         * @description Dispara a carga a partir do banco do Protheus.
+         *
+         *     200 e não 202: a carga roda no próprio request e o relatório por empresa
+         *     volta na resposta. Quando o volume exigir execução em segundo plano, isto
+         *     vira um job e a rota passa a devolver 202 com um id de acompanhamento.
+         */
+        post: operations["sincronizar_api_products_sync_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/products/{produto_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Obter
+         * @description Rota com parâmetro vem DEPOIS de ``/sync``.
+         *
+         *     Registrada antes, ``sync`` seria lido como id de produto e a carga viraria
+         *     um 404 sem explicação.
+         */
+        get: operations["obter_api_products__produto_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/protheus/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Protheus Status */
+        get: operations["protheus_status_api_protheus_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/protheus/test-connection": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Protheus Testar
+         * @description Exige escrita porque consome uma sessão/licença no ERP a cada chamada.
+         */
+        post: operations["protheus_testar_api_protheus_test_connection_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/database/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Database Status
+         * @description Diagnóstico da conexão do PORTAL, em leitura.
+         *
+         *     A conexão é definida no ambiente, não pela tela — por isso não existe rota
+         *     de escrita aqui. A senha nunca aparece, nem mascarada.
+         */
+        get: operations["database_status_api_database_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/diagnostics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Diagnostico */
+        get: operations["diagnostico_api_diagnostics_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/health": {
         parameters: {
             query?: never;
@@ -375,6 +559,26 @@ export interface components {
             loginMessage: string;
             /** Supportemail */
             supportEmail: string | null;
+        };
+        /** CaminhoDiagnostico */
+        CaminhoDiagnostico: {
+            /** Nome */
+            nome: string;
+            /** Caminho */
+            caminho: string;
+            /** Existe */
+            existe: boolean;
+            /** Tamanho */
+            tamanho?: number | null;
+            /** Observacao */
+            observacao?: string | null;
+        };
+        /** ChangePasswordInput */
+        ChangePasswordInput: {
+            /** Currentpassword */
+            currentPassword: string;
+            /** Newpassword */
+            newPassword: string;
         };
         /**
          * ColunaBanco
@@ -436,10 +640,66 @@ export interface components {
              */
             role: string;
         };
+        /**
+         * DatabaseStatus
+         * @description Diagnóstico da conexão do PORTAL, em leitura.
+         *
+         *     A conexão é definida no ambiente, não pela tela. A senha nunca aparece
+         *     aqui, nem mascarada.
+         */
+        DatabaseStatus: {
+            /** Provider */
+            provider: string;
+            /** Servidor */
+            servidor: string;
+            /** Porta */
+            porta: number | null;
+            /** Banco */
+            banco: string;
+            /** Usuario */
+            usuario: string;
+            /** Criptografado */
+            criptografado: boolean;
+            /** Conectado */
+            conectado: boolean;
+            /** Latenciams */
+            latenciaMs: number | null;
+            /** Versaoservidor */
+            versaoServidor: string | null;
+            /** Detalheerro */
+            detalheErro: string | null;
+        };
+        /** DiagnosticoResponse */
+        DiagnosticoResponse: {
+            /**
+             * Geradoem
+             * Format: date-time
+             */
+            geradoEm: string;
+            /** Runtime */
+            runtime: components["schemas"]["ItemDiagnostico"][];
+            /** Caminhos */
+            caminhos: components["schemas"]["CaminhoDiagnostico"][];
+            /** Pacotes */
+            pacotes: components["schemas"]["PacoteDiagnostico"][];
+            /** Banco */
+            banco: components["schemas"]["ItemDiagnostico"][];
+            /** Alertas */
+            alertas: string[];
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /** ItemDiagnostico */
+        ItemDiagnostico: {
+            /** Nome */
+            nome: string;
+            /** Valor */
+            valor: string;
+            /** Observacao */
+            observacao?: string | null;
         };
         /**
          * LoginInput
@@ -463,6 +723,13 @@ export interface components {
              * @description Senha em texto, sobre TLS
              */
             password: string;
+        };
+        /** PacoteDiagnostico */
+        PacoteDiagnostico: {
+            /** Nome */
+            nome: string;
+            /** Versao */
+            versao: string;
         };
         /**
          * ParametroPublico
@@ -501,6 +768,48 @@ export interface components {
              */
             updatedAt: string;
         };
+        /** ProductListResponse */
+        ProductListResponse: {
+            /** Data */
+            data: components["schemas"]["PublicProduct"][];
+            /** Total */
+            total: number;
+        };
+        /** ProductSyncCompanyResult */
+        ProductSyncCompanyResult: {
+            /** Empresa */
+            empresa: string;
+            /** Filial */
+            filial: string;
+            /** Empori */
+            empori: string;
+            /** Sourcetable */
+            sourceTable: string;
+            /** Paginas */
+            paginas: number;
+            /** Lidos */
+            lidos: number;
+            /** Gravados */
+            gravados: number;
+            /**
+             * Duplicados
+             * @default 0
+             */
+            duplicados: number;
+            /** Erro */
+            erro?: string | null;
+        };
+        /** ProductSyncResult */
+        ProductSyncResult: {
+            /** Empresas */
+            empresas: components["schemas"]["ProductSyncCompanyResult"][];
+            /** Lidos */
+            lidos: number;
+            /** Gravados */
+            gravados: number;
+            /** Duracaoms */
+            duracaoMs: number;
+        };
         /**
          * ProtheusDbConfig
          * @description O que está configurado. A senha nunca aparece aqui, nem mascarada.
@@ -526,6 +835,116 @@ export interface components {
             configurado: boolean;
             /** Pendencias */
             pendencias: string[];
+        };
+        /**
+         * ProtheusDbTabela
+         * @description Uma tabela de produtos e o que foi encontrado nela.
+         */
+        ProtheusDbTabela: {
+            /** Empresa */
+            empresa: string;
+            /** Nome */
+            nome: string;
+            /** Existe */
+            existe: boolean;
+            /** Registros */
+            registros: number | null;
+            /** Detalhe */
+            detalhe: string | null;
+        };
+        /** ProtheusDbTestResult */
+        ProtheusDbTestResult: {
+            /** Ok */
+            ok: boolean;
+            /** Detalhe */
+            detalhe: string;
+            /** Duracaoms */
+            duracaoMs: number;
+            /** Servidor */
+            servidor: string | null;
+            /** Versaoservidor */
+            versaoServidor: string | null;
+            /** Banco */
+            banco: string | null;
+            /** Loginefetivo */
+            loginEfetivo: string | null;
+            /** Podeescrever */
+            podeEscrever: boolean | null;
+            /** Tabelas */
+            tabelas: components["schemas"]["ProtheusDbTabela"][];
+            /** Erro */
+            erro: string | null;
+        };
+        /**
+         * ProtheusStatus
+         * @description O que está configurado. A senha nunca aparece, só se ela existe.
+         */
+        ProtheusStatus: {
+            /** Configurado */
+            configurado: boolean;
+            /** Baseurl */
+            baseUrl: string;
+            /** Usuario */
+            usuario: string;
+            /** Timeoutsegundos */
+            timeoutSegundos: number;
+            /** Senhaconfigurada */
+            senhaConfigurada: boolean;
+        };
+        /** ProtheusTestResult */
+        ProtheusTestResult: {
+            /** Ok */
+            ok: boolean;
+            /** Detalhe */
+            detalhe: string;
+            /** Tokenvalidoporsegundos */
+            tokenValidoPorSegundos: number | null;
+            /** Duracaoms */
+            duracaoMs: number;
+        };
+        /** PublicProduct */
+        PublicProduct: {
+            /** Id */
+            id: string;
+            /** Empori */
+            empori: string;
+            /** Sourcetable */
+            sourceTable: string;
+            /** Code */
+            code: string;
+            /** Description */
+            description: string;
+            /** Type */
+            type: string | null;
+            /** Unit */
+            unit: string | null;
+            /** Group */
+            group: string | null;
+            /** Defaultwarehouse */
+            defaultWarehouse: string | null;
+            /** Ncm */
+            ncm: string | null;
+            /** Fiscalmodel */
+            fiscalModel: string | null;
+            /** Isblocked */
+            isBlocked: boolean;
+            /** Isactive */
+            isActive: boolean;
+            /** Costcenter */
+            costCenter: string | null;
+            /** Expenseaccount */
+            expenseAccount: string | null;
+            /** Assetaccount */
+            assetAccount: string | null;
+            /** Revenueaccount */
+            revenueAccount: string | null;
+            /** Saleprice */
+            salePrice: number | null;
+            /**
+             * Syncedat
+             * Format: date-time
+             */
+            syncedAt: string;
         };
         /**
          * PublicUser
@@ -688,6 +1107,43 @@ export interface operations {
             };
         };
         requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    trocar_senha_api_auth_change_password_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: {
+                tp_session?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangePasswordInput"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -895,6 +1351,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProtheusDbConfig"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    testar_api_protheus_db_testar_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: {
+                tp_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProtheusDbTestResult"];
                 };
             };
             /** @description Validation Error */
@@ -1292,6 +1781,246 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PublicUser"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    listar_api_products_get: {
+        parameters: {
+            query?: {
+                search?: string | null;
+                empori?: string | null;
+                page?: number;
+                pageSize?: number;
+            };
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: {
+                tp_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sincronizar_api_products_sync_post: {
+        parameters: {
+            query?: {
+                empresa?: string | null;
+            };
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: {
+                tp_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProductSyncResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    obter_api_products__produto_id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                produto_id: string;
+            };
+            cookie?: {
+                tp_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicProduct"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    protheus_status_api_protheus_status_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: {
+                tp_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProtheusStatus"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    protheus_testar_api_protheus_test_connection_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: {
+                tp_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProtheusTestResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    database_status_api_database_status_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: {
+                tp_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DatabaseStatus"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    diagnostico_api_diagnostics_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: {
+                tp_session?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiagnosticoResponse"];
                 };
             };
             /** @description Validation Error */

@@ -20,7 +20,7 @@ from trigo_api.permissoes import PAPEIS
 _MINIMO = 10
 
 
-def _validar_senha(valor: str) -> str:
+def validar_senha(valor: str) -> str:
     """Senha forte, com a mensagem dizendo o que falta.
 
     "Senha inválida" manda a pessoa adivinhar. Cada regra quebrada vira uma
@@ -82,7 +82,7 @@ class CriarUsuarioInput(BaseModel):
     @field_validator("password")
     @classmethod
     def _senha(cls, valor: str) -> str:
-        return _validar_senha(valor)
+        return validar_senha(valor)
 
     @field_validator("role")
     @classmethod
@@ -100,7 +100,7 @@ class RedefinirSenhaInput(BaseModel):
     @field_validator("new_password")
     @classmethod
     def _senha(cls, valor: str) -> str:
-        return _validar_senha(valor)
+        return validar_senha(valor)
 
 
 class AtualizarUsuarioInput(BaseModel):

@@ -1,0 +1,43 @@
+[project]
+name = "trigo-api"
+version = "0.1.0"
+description = "Backend do Portal Trigo"
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "pydantic>=2.9",
+    "pydantic-settings>=2.6",
+    "sqlalchemy>=2.0",
+    "alembic>=1.14",
+    "cryptography>=43",
+    "pyjwt>=2.9",
+    "httpx>=0.27",
+    "python-multipart>=0.0.12",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.7",
+    "mypy>=1.13",
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "UP", "B", "SIM"]
+
+[tool.mypy]
+python_version = "3.13"
+# A migracao existe para ter tipagem util. Anotacao opcional nao verificada
+# nao vale nada: aqui ela e obrigatoria e quebra o CI, como o tsc fazia.
+strict = true
+warn_unreachable = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+pythonpath = ["src"]
